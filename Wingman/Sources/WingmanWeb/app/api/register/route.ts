@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
-import mysql from 'mysql2/promise';
+import { db } from '../../lib/database';
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,23 +20,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Connect to database
-    const connection = await mysql.createConnection({
-      host: '101.132.156.250',
-      port: 33320,
-      user: 'wingman_db_usr_8a2Xy',
-      password: 'Z8#kP2@vQ7$mE5!tR3&wX9*yB4',
-      database: 'wingman_db'
-    });
-
     // Check if email exists
-    const [existingUsers] = await connection.execute(
+    const existingUsers = await db.execute(
       'SELECT id FROM users WHERE email = ?',
       [email]
     );
 
     if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-      await connection.end();
       return NextResponse.json({
         success: false,
         error: 'Email already registered',
@@ -48,13 +39,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user using correct column name 'name' instead of 'username'
-    const [result] = await connection.execute(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+    // Insert user
+    const result = await db.execute(
+      'INSERT INTO users (name, email, password, created_at) VALUES (?, ?, ?, NOW())',
       [name, email, hashedPassword]
     );
-
-    await connection.end();
 
     return NextResponse.json({
       success: true,

@@ -49,8 +49,11 @@ export default function WingmanPanel() {
     console.log('Starting to load API test result from localStorage...');
     if (typeof window !== 'undefined') {
       const storedApiTest = localStorage.getItem('apiTestResult');
+      const firstLoadAfterLogin = localStorage.getItem('firstLoadAfterLogin') === 'true';
       console.log('Stored API test result:', storedApiTest);
-      if (storedApiTest) {
+      console.log('First load after login:', firstLoadAfterLogin);
+      
+      if (storedApiTest && !firstLoadAfterLogin) {
         try {
           const parsedTest = JSON.parse(storedApiTest);
           console.log('Parsed API test result:', parsedTest);
@@ -70,6 +73,9 @@ export default function WingmanPanel() {
             testError: null
           });
         }
+      } else if (firstLoadAfterLogin) {
+        console.log('First load after login detected, will run API connection test');
+        // Don't set test result yet - test will run after authentication
       } else {
         // Default to PASS if no stored result (since we skip API test during login)
         console.log('Defaulting API test result to PASS due to no stored result');
@@ -81,6 +87,173 @@ export default function WingmanPanel() {
       }
     }
   }, []);
+
+  // State for AI connection tests
+  const [aiTestState, setAiTestState] = useState({
+    isTesting: false,
+    currentProvider: '',
+    testResults: [] as Array<{ provider: string; result: 'PASS' | 'FAIL'; error?: string }>,
+    allPassed: false,
+    somePassed: false
+  });
+
+  // Test AI connection
+  const testAIConnection = async (user: User) => {
+    console.log('Starting AI connection test...');
+    if (!user.aiConnections || user.aiConnections.length === 0) {
+      console.log('No AI connections configured, skipping test');
+      setApiTest({
+        isTesting: false,
+        testResult: 'PASS',
+        testError: null
+      });
+      // Store result in localStorage
+      localStorage.setItem('apiTestResult', JSON.stringify({
+        testResult: 'PASS',
+        testError: null
+      }));
+      // Clear firstLoadAfterLogin flag
+      localStorage.removeItem('firstLoadAfterLogin');
+      return;
+    }
+
+    setAiTestState({
+      isTesting: true,
+      currentProvider: '',
+      testResults: [],
+      allPassed: false,
+      somePassed: false
+    });
+
+    setApiTest({
+      isTesting: true,
+      testResult: null,
+      testError: null
+    });
+
+    try {
+      const testResults = [];
+      let allPassed = true;
+      let somePassed = false;
+
+      // Test each AI connection
+      for (const connection of user.aiConnections) {
+        console.log('Testing AI connection:', connection.apiProvider);
+        
+        // Update current provider being tested
+        setAiTestState(prev => ({
+          ...prev,
+          currentProvider: connection.apiProvider
+        }));
+
+        try {
+          const response = await axios.post('/api/test-ai-connection', {
+            provider: connection.apiProvider,
+            apiKey: connection.apiKey
+          });
+          
+          console.log('AI connection test response for', connection.apiProvider, ':', response.data);
+          
+          if (response.data.success) {
+            testResults.push({
+              provider: connection.apiProvider,
+              result: 'PASS'
+            });
+            somePassed = true;
+          } else {
+            testResults.push({
+              provider: connection.apiProvider,
+              result: 'FAIL',
+              error: response.data.error || 'Connection failed'
+            });
+            allPassed = false;
+          }
+        } catch (error) {
+          console.error('AI connection test error for', connection.apiProvider, ':', error);
+          testResults.push({
+            provider: connection.apiProvider,
+            result: 'FAIL',
+            error: 'Connection test failed'
+          });
+          allPassed = false;
+        }
+
+        // Update test results
+        setAiTestState(prev => ({
+          ...prev,
+          testResults: [...testResults],
+          allPassed,
+          somePassed
+        }));
+
+        // Small delay between tests
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      console.log('All AI connection tests completed:', { allPassed, somePassed, testResults });
+
+      if (allPassed) {
+        setApiTest({
+          isTesting: false,
+          testResult: 'PASS',
+          testError: null
+        });
+        // Store result in localStorage
+        localStorage.setItem('apiTestResult', JSON.stringify({
+          testResult: 'PASS',
+          testError: null
+        }));
+      } else if (somePassed) {
+        // Some tests passed, some failed
+        setApiTest({
+          isTesting: false,
+          testResult: 'PASS', // Still pass overall since some connections work
+          testError: 'Some AI connections failed'
+        });
+        // Store result in localStorage
+        localStorage.setItem('apiTestResult', JSON.stringify({
+          testResult: 'PASS',
+          testError: 'Some AI connections failed'
+        }));
+        // Show message to check account settings
+        setTimeout(() => {
+          alert('Some AI connections failed. Please check your account settings for the failed providers.');
+        }, 1000);
+      } else {
+        // All tests failed
+        setApiTest({
+          isTesting: false,
+          testResult: 'FAIL',
+          testError: 'All AI connections failed'
+        });
+        // Store result in localStorage
+        localStorage.setItem('apiTestResult', JSON.stringify({
+          testResult: 'FAIL',
+          testError: 'All AI connections failed'
+        }));
+      }
+    } catch (error) {
+      console.error('AI connection test error:', error);
+      setApiTest({
+        isTesting: false,
+        testResult: 'FAIL',
+        testError: 'Connection test failed'
+      });
+      // Store result in localStorage
+      localStorage.setItem('apiTestResult', JSON.stringify({
+        testResult: 'FAIL',
+        testError: 'Connection test failed'
+      }));
+    } finally {
+      // Clear firstLoadAfterLogin flag
+      localStorage.removeItem('firstLoadAfterLogin');
+      // Clear AI test state
+      setAiTestState(prev => ({
+        ...prev,
+        isTesting: false
+      }));
+    }
+  };
 
   // Check authentication status
   useEffect(() => {
@@ -99,6 +272,16 @@ export default function WingmanPanel() {
             error: null
           });
           console.log('Set auth state to authenticated');
+          
+          // Check if it's first load after login
+          const firstLoadAfterLogin = localStorage.getItem('firstLoadAfterLogin') === 'true';
+          console.log('First load after login:', firstLoadAfterLogin);
+          
+          if (firstLoadAfterLogin) {
+            // Run AI connection test
+            console.log('Running AI connection test after login');
+            await testAIConnection(response.data.user);
+          }
         } else {
           console.log('Authentication failed, not authorized');
           setAuth({
@@ -164,10 +347,37 @@ export default function WingmanPanel() {
   if (apiTest.isTesting) {
     console.log('Rendering API test in progress state');
     return (
-      <div className="page-container bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Testing AI connection...</p>
+      <div className="page-container bg-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+          <div className="text-center mb-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Testing AI Connections...</h2>
+            {aiTestState.currentProvider && (
+              <p className="text-gray-600 mb-4">
+                Current: <span className="font-medium">{aiTestState.currentProvider}</span>
+              </p>
+            )}
+          </div>
+          
+          {aiTestState.testResults.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Test Results:</h3>
+              <div className="space-y-2">
+                {aiTestState.testResults.map((result, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 rounded-md border">
+                    <span className="font-medium">{result.provider}</span>
+                    <span className={`font-medium ${result.result === 'PASS' ? 'text-green-600' : 'text-red-600'}`}>
+                      {result.result === 'PASS' ? '✅ PASS' : '❌ FAIL'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <p className="text-gray-500 text-sm text-center">
+            This may take a few seconds per connection...
+          </p>
         </div>
       </div>
     );

@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "mysql2": "^3.17.4"
+    "mysql2": "^3.17.5"
   }
 }

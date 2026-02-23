@@ -18,8 +18,12 @@ export interface DecodedToken {
 export function verifyToken(token: string) {
   const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
   try {
-    return jwt.verify(token, jwtSecret) as DecodedToken | null;
-  } catch {
+    console.log('Verifying token:', token.substring(0, 50) + '...');
+    const decoded = jwt.verify(token, jwtSecret) as any;
+    console.log('Token verified successfully:', decoded);
+    return decoded as DecodedToken | null;
+  } catch (error) {
+    console.error('Token verification error:', error);
     return null;
   }
 }

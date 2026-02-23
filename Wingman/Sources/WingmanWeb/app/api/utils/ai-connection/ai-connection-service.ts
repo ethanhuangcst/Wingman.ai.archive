@@ -64,9 +64,17 @@ export class AIConnectionService {
 
       console.log(`Starting connection to ${provider} with ${providerConfig.base_urls.length} endpoints`);
 
+      // Filter and prioritize endpoints based on accessibility
+      const accessibleEndpoints = await this.getAccessibleEndpoints(providerConfig.base_urls);
+      const allEndpoints = accessibleEndpoints.length > 0 ? accessibleEndpoints : providerConfig.base_urls;
+
+      console.log(`Using endpoints in order: ${allEndpoints.map(url => url).join(', ')}`);
+
       // Try each base URL in order
       let totalAttempts = 0;
-      for (const baseUrl of providerConfig.base_urls) {
+      let lastError: string = '';
+      
+      for (const baseUrl of allEndpoints) {
         totalAttempts++;
         
         try {
@@ -97,9 +105,12 @@ export class AIConnectionService {
           }
           
           console.log(`Failed to connect to ${provider} using URL: ${baseUrl}`);
+          console.log(`Error details: ${response.error}`);
+          lastError = response.error || '';
           
         } catch (error) {
           console.error(`Error connecting to ${provider} using URL ${baseUrl}:`, error);
+          lastError = (error as Error).message;
         }
       }
 
@@ -107,7 +118,7 @@ export class AIConnectionService {
       console.error(`All ${totalAttempts} attempts to connect to ${provider} failed`);
       return {
         success: false,
-        error: `Failed to connect to ${provider} using all configured URLs. Please check your network connectivity or API key.`,
+        error: `Failed to connect to ${provider} using all configured URLs. Last error: ${lastError}. Please check your network connectivity or API key.`,
         attempts: totalAttempts
       };
     } catch (error) {
@@ -117,6 +128,43 @@ export class AIConnectionService {
         error: `Unexpected error: ${(error as Error).message}`
       };
     }
+  }
+
+  /**
+   * Test endpoints for accessibility and return them in order of responsiveness
+   */
+  private async getAccessibleEndpoints(endpoints: string[]): Promise<string[]> {
+    const endpointTests = endpoints.map(async (endpoint) => {
+      try {
+        const startTime = Date.now();
+        // Test basic connectivity
+        const response = await fetch(endpoint, {
+          method: 'HEAD',
+          timeout: 5000
+        });
+        const endTime = Date.now();
+        return {
+          endpoint,
+          accessible: true,
+          latency: endTime - startTime,
+          status: response.status
+        };
+      } catch (error) {
+        console.warn(`Endpoint ${endpoint} is not accessible:`, error.message);
+        return {
+          endpoint,
+          accessible: false,
+          latency: Infinity,
+          status: 0
+        };
+      }
+    });
+
+    const results = await Promise.all(endpointTests);
+    return results
+      .filter(result => result.accessible)
+      .sort((a, b) => a.latency - b.latency)
+      .map(result => result.endpoint);
   }
 
   /**
@@ -134,17 +182,14 @@ export class AIConnectionService {
       
       // Prepare headers
       const headers: HeadersInit = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Wingman AI Agent'
       };
       
       // Add auth header if required
       if (providerConfig.requires_auth && providerConfig.auth_header) {
         headers[providerConfig.auth_header] = `Bearer ${apiKey}`;
       }
-      
-      // Make request with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
       
       // For OpenAI-compatible APIs, append /chat/completions to the base URL if not already present
       let endpointUrl = baseUrl;
@@ -156,49 +201,94 @@ export class AIConnectionService {
       }
       
       console.log(`Making API call to ${endpointUrl} with provider ${providerConfig.name}`);
-      console.log(`Request data: ${JSON.stringify(requestData).substring(0, 500)}${JSON.stringify(requestData).length > 500 ? '...' : ''}`);
       console.log(`Headers: ${JSON.stringify(headers)}`);
+      console.log(`Request body length: ${JSON.stringify(requestData).length} characters`);
       
-      const startTime = Date.now();
-      const response = await fetch(endpointUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestData),
-        signal: controller.signal
-      });
-      const endTime = Date.now();
+      // Use shorter timeout for better responsiveness
+      const timeout = 30000; // 30 seconds instead of 7 minutes
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
       
-      clearTimeout(timeoutId);
-      
-      console.log(`API response status: ${response.status} (${endTime - startTime}ms)`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API error data:', errorData);
+      try {
+        const startTime = Date.now();
+        
+        // Enhanced fetch with better error handling
+        const response = await fetch(endpointUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestData),
+          signal: controller.signal,
+          credentials: 'omit',
+          redirect: 'follow',
+          referrerPolicy: 'no-referrer'
+        });
+        
+        const endTime = Date.now();
+        clearTimeout(timeoutId);
+        
+        console.log(`API response status: ${response.status} (${endTime - startTime}ms)`);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('API error data:', errorData);
+          return {
+            success: false,
+            error: `API request failed: ${response.status} ${response.statusText}, ${JSON.stringify(errorData)}`,
+            endpointUrl
+          };
+        }
+        
+        const data = await response.json();
+        console.log(`API response received (${endTime - startTime}ms): ${JSON.stringify(data).substring(0, 500)}${JSON.stringify(data).length > 500 ? '...' : ''}`);
+        
+        // Process response based on provider
+        const result = this.processResponse(providerConfig, data);
         return {
-          success: false,
-          error: `API request failed: ${response.status} ${response.statusText}, ${JSON.stringify(errorData)}`,
+          ...result,
           endpointUrl
         };
-      }
-      
-      const data = await response.json();
-      console.log(`API response received (${endTime - startTime}ms): ${JSON.stringify(data).substring(0, 500)}${JSON.stringify(data).length > 500 ? '...' : ''}`);
-      
-      // Process response based on provider
-      const result = this.processResponse(providerConfig, data);
-      return {
-        ...result,
-        endpointUrl
-      };
-    } catch (error) {
-      console.error('Error in makeApiCall:', error);
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      } catch (error) {
+        clearTimeout(timeoutId);
+        console.error('Error in fetch request:', error);
+        console.error('Error cause:', (error as any).cause);
+        
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return {
+            success: false,
+            error: `Request timed out after ${timeout}ms`
+          };
+        }
+        
+        // Handle different error types
+        if ((error as any).code === 'UND_ERR_CONNECT_TIMEOUT' || ((error as any).cause && (error as any).cause.code === 'UND_ERR_CONNECT_TIMEOUT')) {
+          return {
+            success: false,
+            error: `Connection timeout: Unable to connect to ${endpointUrl} within ${timeout}ms`
+          };
+        }
+        
+        if ((error as any).code === 'ECONNREFUSED' || ((error as any).cause && (error as any).cause.code === 'ECONNREFUSED')) {
+          return {
+            success: false,
+            error: `Connection refused: ${endpointUrl} is not accepting connections`
+          };
+        }
+        
+        // Handle fetch failed errors
+        if ((error as Error).message === 'fetch failed' && (error as any).cause) {
+          return {
+            success: false,
+            error: `API call failed: ${(error as any).cause.code || (error as any).cause.message || 'Network error'}`
+          };
+        }
+        
         return {
           success: false,
-          error: `Request timed out after ${DEFAULT_TIMEOUT}ms`
+          error: `API call failed: ${(error as Error).message}`
         };
       }
+    } catch (error) {
+      console.error('Error in makeApiCall:', error);
       return {
         success: false,
         error: `API call failed: ${(error as Error).message}`

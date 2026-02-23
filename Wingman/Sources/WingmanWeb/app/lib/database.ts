@@ -9,7 +9,12 @@ const dbConfig = {
   database: 'wingman_db',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  connectTimeout: 10000, // 10 seconds timeout
+  acquireTimeout: 15000, // 15 seconds to acquire connection
+  timeout: 30000, // 30 seconds idle timeout
+  charset: 'utf8mb4',
+  multipleStatements: false
 };
 
 // Create database connection pool

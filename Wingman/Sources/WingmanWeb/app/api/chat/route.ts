@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AI_API_CONNECTION } from './../utils/ai-connection/ai-connection-service';
 import { verifyToken } from './../account/route';
 import { getDefaultProvider } from '../../lib/db';
-import db from '../../lib/database';
+import db from '../../lib/db';
 
 // Helper function to get user ID from token
 function getUserIdFromRequest(request: NextRequest) {
@@ -59,21 +59,50 @@ async function getUserAPIInfo(userId: number, selectedProvider?: string): Promis
     query += ' ORDER BY id ASC LIMIT 1';
   }
   
-  const connections = await db.execute(query, params);
+  console.log('Fetching AI connections for user:', userId);
+  console.log('Query:', query);
+  console.log('Params:', params);
+  
+  try {
+    // Check database connection status
+    const status = await db.getStatus();
+    console.log('Database connection status:', status);
+  } catch (statusError) {
+    console.error('Error getting database status:', statusError);
+  }
+  
+  try {
+    const connections = await db.execute(query, params);
 
-  if (Array.isArray(connections) && connections.length > 0) {
-    const connectionData = connections[0] as {
-      apiKey: string;
-      apiProvider: string;
-    };
+    console.log('Database response:', JSON.stringify(connections));
 
-    return {
-      apiProvider: connectionData.apiProvider || 'qwen-plus',
-      apiKey: connectionData.apiKey || ''
-    };
-  } else {
-    // No AI connections found
-    throw new Error('No AI connections found for this user');
+    if (Array.isArray(connections) && connections.length > 0) {
+      const connection = connections[0];
+      console.log('Found connection:', connection);
+      
+      // Extract API key and provider with fallback to different casings
+      const apiKey = connection.api_key || connection.apiKey;
+      const apiProvider = connection.api_provider || connection.apiProvider;
+      
+      console.log('Extracted API Key:', apiKey ? 'Found' : 'Missing');
+      console.log('Extracted API Provider:', apiProvider);
+
+      if (!apiKey) {
+        throw new Error('API key is missing from connection');
+      }
+
+      return {
+        apiProvider: apiProvider || 'qwen-plus',
+        apiKey: apiKey
+      };
+    } else {
+      // No AI connections found
+      console.log('No AI connections found for user:', userId);
+      throw new Error('No AI connections found for this user');
+    }
+  } catch (dbError) {
+    console.error('Database query error:', dbError);
+    throw new Error('Failed to fetch AI connections: ' + (dbError as Error).message);
   }
 }
 

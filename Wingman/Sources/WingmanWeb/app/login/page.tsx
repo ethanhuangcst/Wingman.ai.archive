@@ -84,6 +84,9 @@ export default function LoginPage() {
           }));
         }
         
+        // Set firstLoadAfterLogin flag for API connection test
+        localStorage.setItem('firstLoadAfterLogin', 'true');
+        
         setMessage('Login successful! Redirecting...');
         setMessageType('success');
         
