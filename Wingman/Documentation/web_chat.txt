@@ -1,0 +1,308 @@
+# Feature ID: F-003
+- Feature name: Chat with AI
+- Feature type: Web
+
+
+-----------------------------------
+WIP - Chat with AI: send a message and receive response, then display properly
+-----------------------------------
+## User Story ID: US-003
+As a user, I want to chat with AI, so that I can get answers to my questions and have conversations
+
+### Acceptance Criteria ID: US-003-001
+Scenario: Send a message to AI
+Given: AI is connected via the configured API
+AND the "What's in your mind?" text field is not empty
+When: The user enters text in "What's in your mind?" text field
+AND clicks the "Send" button
+Then: The system should send the text from "What's in your mind?" text field to AI, using the already established connection
+AND reset "What's in your mind?" text field
+AND "What's in your mind?" will be activated for keyboard input
+
+
+### Acceptance Criteria ID: US-003-002
+Scenario: Receive a response from AI
+Given: AI is connected via the configured API
+AND a message has already been sent to AI via the configured API
+When: A response from AI is received
+Then: Display the message sent, and the response from AI in the chat section with chat bubble style and a timestamp
+AND both include a copy button 
+AND Display the response at the bottom
+AND Provide a scroll bar if content exceeds the viewport
+
+### Acceptance Criteria ID: US-003-003
+Scenario: Ongoing conversation in one chat
+Given: The user has sent multiple messages to AI in one chat
+When: The user sends a new message in the current chat conversation
+Then: the chat history will be saved to database
+
+*****************   DONE   ********************
+
+-----------------------------------
+ToDo - start and save a new chat
+-----------------------------------
+## User Story ID: US-004
+As a user, I want to start a new chat with AI, so that I can have multiple on-going conversations
+
+### Acceptance Criteria ID: US-004-001
+Scenario: Initiate a new chat from Chat History List - New Chat button
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+When: The user clicks the "New Chat" button from the "Chat History" section on the left column
+Then: a new chat will be initialized, with chat name by defatul to be "New chat"
+AND "New Chat" will NOT be displayed in the "Chat history" list on the left colomn until a response from AI is received
+AND NOT saved to database until a response from AI is received
+
+
+### Acceptance Criteria ID: US-004-002
+Scenario: Initiate a new chat on Wingman - Panel initialization
+Given: AI is connected via the configured API
+AND Chat History is empty
+When: Wingman-panel is loaded
+Then: a new chat will be initialized, with chat name "New chat"
+AND "New Chat" will NOT be displayed in the "Chat history" list on the left colomn, until a response from AI is received
+AND NOT saved to database until a response from AI is received
+
+### Acceptance Criteria ID: US-004-003
+Scenario: Initiate a new chat on Wingman - Panel initialization
+Given: AI is connected via the configured API
+AND Chat History is NOT empty
+When: Wingman-panel is loaded
+Then: by default the last chat will be loaded
+AND the user will see the whole chat history in chat
+AND the "What's in your mind?" text field will be activated
+AND the usre will be able to continue the previous conversation
+
+### Acceptance Criteria ID: US-004-004
+Scenario: Initiate a new chat - receive first response in a new chat
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND this chat is a new chat
+When: app receives a response from AI
+Then: proceed with US-003-002
+AND Generate an appropriate name for the new chat based on context
+AND the new chat information will be saved into database
+AND the chat name in "Chat History" for the current chat will be replaced by the new name
+
+
+-----------------------------------
+WIP - Manage historical chats: list, rename, delete
+-----------------------------------
+## User Story ID: US-005
+As a user, I want to manage my chat history, so that I can easily access and organize past conversations
+
+### Acceptance Criteria ID: US-005-001
+Scenario: View historical chat list
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+When: The user looks at the left column of Wingman-Panel
+Then: All historical conversations previously conducted by the current user with AI will be retrieved from the database.
+AND all historical chats will be put into a vertical list of historical chats
+AND each item is displayed in just one line with a fixed height of 50px, and a "..." button at the end
+AND the chat name will be displayed
+AND a "New chat" button (no text label, only icon, transparent background, icon file: /Resources/icon_newchat.svg, 20x20px) displayed below the Chat history list, aligned to right
+AND the list should be ordered by created datetime (most recent first)
+
+### Acceptance Criteria ID: US-005-002
+Scenario: View empty chat list
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND no historical chats exist
+When: The user looks at the left column of Wingman-Panel
+Then: The chat list area should display a message indicating no chats exist
+AND a "New chat" button should still be visible
+
+### Acceptance Criteria ID: US-005-003
+Scenario: Open chat menu
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND there are existing historical chats
+When: The user clicks the "..." button at the end of any historical chat
+Then: it should show a menu with "Rename" and "Delete" options
+
+### Acceptance Criteria ID: US-005-004
+Scenario: Rename chat
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND there are multiple existing historical chats in the list in the left column
+When: The user clicks the "..." button
+AND select the "Rename" option
+AND enters a new name
+AND press enter, or mouse click at any other place, or press tab
+Then: The new name should be saved to the database
+AND displayed in the historical chat list
+AND the name should be properly trimmed to a reasonable length
+AND the chat should retain its original content
+AND the new name should be saved for future reference
+
+### Acceptance Criteria ID: US-005-005
+Scenario: Rename chat with empty name
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND there are existing historical chats
+When: The user clicks the "..." button
+AND select the "Rename" option
+AND enters an empty name
+AND press enter
+Then: The system should display an error message
+AND the chat name should remain unchanged
+
+### Acceptance Criteria ID: US-005-006
+Scenario: Delete a historical Chat
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND there are multiple existing historical chats in the list in the left column
+When: The user clicks the "..." button
+AND select the "Delete" option
+AND confirm "Are you sure you want to permanently delete this chat?Cancel/Confirm"
+Then: The chat should be removed from the historical list
+AND the chat history should be permanently deleted from the database
+AND all associated messages should be deleted
+
+### Acceptance Criteria ID: US-005-007
+Scenario: Cancel chat deletion
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND there are existing historical chats
+When: The user clicks the "..." button
+AND select the "Delete" option
+AND cancel the deletion
+Then: The chat should remain in the historical list
+AND the chat history should remain unchanged
+
+
+### Acceptance Criteria ID: US-005-008
+Scenario: Chat ordering and highlighting
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has multiple chat histories
+When: The user views the historical chat list
+Then: The chats should be ordered by created datetime (most recent first)
+AND each chat should have a distinct name
+AND the active chat should be highlighted
+
+### Acceptance Criteria ID: US-005-009
+Scenario: Horizontal scroll for many chats
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has many chat histories that exceed the width of the chat list area
+When: The user views the historical chat list
+Then: Horizontal scroll arrows should be visible
+AND the user should be able to scroll left/right to view all chats
+
+### Acceptance Criteria ID: US-005-010
+Scenario: API error when loading chat history
+Given: Wingman-panel is loaded
+AND there is an API connection issue with the configured AI provider
+When: The user looks at the left column of Wingman-Panel
+Then: The chat list area should display an error message indicating failed to load chat history
+AND a "Retry" option should be available
+AND the "New chat" button should still be functional
+
+
+-----------------------------------
+WIP - Resume historical chats, defaul chat
+-----------------------------------
+## User Story ID: US-006
+As a user, I want to resume historical chats, so that I can continue the conversation with AI
+
+
+### Acceptance Criteria ID: US-006-001
+Scenario: Resume a previous chat - load chat history
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND there are existing historical chats
+When: The user clicks on a historical chat item
+Then: The complete historical conversation in that particular chat will be retrieved from database
+AND the chat will be marked as "resumed"
+AND The chat interface should display the selected chat's complete history
+AND the user should be able to continue the conversation seamlessly
+AND the selected chat should be highlighted as active
+
+### Acceptance Criteria ID: US-006-002
+Scenario: Defaul chat when Wingman-panel is loaded
+Given: AI is connected via the configured API
+AND there are existing historical chats
+When: the Wingman-Panel page is loaded
+Then: The current chat is by default restored from the most recent historical chat.
+
+### Acceptance Criteria ID: US-006-003
+Scenario: Resume a previous chat - send whole conversation
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the chat is just resumed from database (chat marked as "resumed")
+AND the complete historical conversation has been retrieved from database
+AND the "What's in your mind?" text field is not empty
+When: The user clicks "Send" button
+Then: The whole historical conversation, plus the current text in "What's in your mind?" text field will be send to AI via the configured API
+AND the current chat will not be marked as "resumed"
+
+
+-----------------------------------
+ToDo - Switch AI providers in chat
+-----------------------------------
+## User Story ID: US-007
+As a user, I want to switch between different AI providers/models in the chat interface, so that I can use different AI capabilities for different conversations
+
+### Acceptance Criteria ID: US-007-001
+Scenario: View AI provider dropdown in chat input field
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has configured multiple AI connections in account settings
+When: The user looks at the "What's in your mind?" text field
+Then: A dropdown menu should be visible inside the text field, next to the upload file icon on the left
+AND the dropdown should display the label "AI provider"
+AND the dropdown should show the currently selected AI provider/model (e.g., "gpt-5.2-all" or "qwen-plus")
+
+### Acceptance Criteria ID: US-007-002
+Scenario: Switch AI provider in chat
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has configured multiple AI connections in account settings
+AND the AI provider dropdown is visible in the chat input field
+When: The user clicks on the AI provider dropdown
+AND selects a different AI provider/model from the list
+Then: The selected AI provider/model should be updated in the dropdown
+AND all subsequent messages in the current chat should use the newly selected AI provider
+
+### Acceptance Criteria ID: US-007-003
+Scenario: AI provider dropdown with single connection
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has only one AI connection configured in account settings
+When: The user looks at the "What's in your mind?" text field
+Then: The AI provider dropdown should still be visible
+AND the dropdown should display the only available AI provider/model
+AND the dropdown should be disabled since there are no other options
+
+### Acceptance Criteria ID: US-007-004
+Scenario: AI provider dropdown with no connections
+Given: Wingman-panel is loaded
+AND the user has no AI connections configured in account settings
+When: The user looks at the "What's in your mind?" text field
+Then: The AI provider dropdown should be visible
+AND the dropdown should display a message indicating no AI connections are configured
+AND clicking the dropdown should prompt the user to add an AI connection in account settings
+
+### Acceptance Criteria ID: US-007-005
+Scenario: Persist AI provider selection in chat
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has configured multiple AI connections in account settings
+AND the user has selected a specific AI provider/model for the current chat
+When: The user navigates away from the chat
+AND returns to the same chat later
+Then: The chat should remember the previously selected AI provider/model
+AND the dropdown should display the same AI provider/model that was selected before
+
+### Acceptance Criteria ID: US-007-006
+Scenario: API error when switching AI provider
+Given: AI is connected via the configured API
+AND Wingman-panel is loaded
+AND the user has configured multiple AI connections in account settings
+When: The user selects a different AI provider/model from the dropdown
+AND there is an API connection issue with the selected AI provider
+Then: An error message should be displayed indicating the selected AI provider is not available
+AND the dropdown should revert to the previously working AI provider
+AND the user should be able to try selecting a different provider
+

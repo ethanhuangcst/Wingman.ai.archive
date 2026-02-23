@@ -1,0 +1,217 @@
+# Wingman Project Folder Structure
+
+## High-Level Structure
+```
+┌───────────────────────────────────────────────────────────────┐
+│                       Wingman.ai                             │
+├───────────────────────────────────────────────────────────────┤
+│ ┌───────────────────────────────────────────────────────────┐ │
+│ │                      Wingman                              │ │
+│ │          (Mac Client Application)                         │ │
+│ └───────────────────────────────────────────────────────────┘ │
+│ ┌───────────────────────────────────────────────────────────┐ │
+│ │                    WingmanWeb                             │ │
+│ │          (Next.js Web Application)                        │ │
+│ └───────────────────────────────────────────────────────────┘ │
+│ ┌───────────────────────────────────────────────────────────┐ │
+│ │                    Documentation                          │ │
+│ │        (Architecture, API Docs, etc.)                     │ │
+│ └───────────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────────┘
+```
+
+## 1. Wingman (Mac Client Application)
+
+### Folder Structure
+```
+Wingman/
+├── Sources/
+│   ├── Wingman/
+│   │   ├── App/
+│   │   │   └── Wingman.swift       # Main app entry point
+│   │   ├── WingmanController/
+│   │   │   └── Controllers/
+│   │   │       └── AppCoordinator.swift  # App coordination logic
+│   │   ├── WingmanCore/
+│   │   │   └── Services/
+│   │   │       ├── ConnectivityService.swift  # Internet connectivity
+│   │   │       ├── MenuBarService.swift       # Menu bar functionality
+│   │   │       └── SettingsService.swift      # Settings management
+│   │   ├── WingmanUI/
+│   │   │   └── Views/
+│   │   │       ├── SettingsWindow.swift       # Settings window
+│   │   │       └── WingmanPanel.swift         # Main panel with WebView
+│   └── WingmanWeb/
+│       └── Services/
+│           └── WebViewService.swift   # WebView management
+├── Tests/
+│   ├── WingmanCoreTests/
+│   │   └── Services/
+│   ├── WingmanUITests/
+│   │   └── Views/
+│   └── WingmanWebTests/
+│       └── Services/
+├── Resources/
+│   ├── icon.png           # Online mode icon
+│   ├── icon_offline.png   # Offline mode icon
+│   └── config.json        # Mac app configuration
+├── Package.swift          # Swift Package Manager config
+└── README.md              # Mac app documentation
+```
+
+### Key Files
+- **WingmanPanel.swift**: Contains the WKWebView setup and JavaScript bridge implementation
+- **config.json**: Stores web app URL and communication settings
+- **WebViewService.swift**: Handles WebView loading and communication
+
+## 2. WingmanWeb (Next.js Web Application)
+
+### Folder Structure
+```
+WingmanWeb/
+├── public/                 # Static assets
+│   ├── favicon.ico
+│   └── images/
+├── src/
+│   ├── app/               # Next.js App Router (pages)
+│   │   ├── layout.tsx     # Root layout
+│   │   ├── page.tsx       # Home page
+│   │   ├── dashboard/
+│   │   │   └── page.tsx   # Dashboard page
+│   │   ├── settings/
+│   │   │   └── page.tsx   # Settings page
+│   │   └── api/           # Next.js API Routes
+│   │       ├── auth/
+│   │       │   ├── login/route.ts
+│   │       │   └── logout/route.ts
+│   │       ├── user/
+│   │       │   └── route.ts
+│   │       └── chat/
+│   │           └── route.ts
+│   ├── components/         # UI components
+│   │   ├── layout/
+│   │   │   ├── Header.tsx
+│   │   │   └── Footer.tsx
+│   │   ├── ui/             # Ant Design components
+│   │   │   ├── Button.tsx
+│   │   │   └── Card.tsx
+│   │   └── chat/
+│   │       ├── ChatBubble.tsx
+│   │       └── ChatInput.tsx
+│   ├── services/           # API services
+│   │   ├── api.ts          # API client setup
+│   │   ├── authService.ts
+│   │   └── chatService.ts
+│   ├── hooks/              # Custom React hooks
+│   │   ├── useAuth.ts
+│   │   └── useChat.ts
+│   ├── contexts/           # React contexts
+│   │   └── AuthContext.tsx
+│   ├── utils/              # Utility functions
+│   │   ├── formatters.ts
+│   │   └── validators.ts
+│   ├── types/              # TypeScript types
+│   │   ├── user.ts
+│   │   ├── chat.ts
+│   │   └── api.ts
+│   └── styles/             # Global styles
+│       ├── globals.css
+│       └── theme.ts
+
+├── .env.local              # Local development environment variables
+├── .env.production         # Production environment variables
+├── next.config.js          # Next.js configuration
+├── package.json            # npm package configuration
+├── tsconfig.json           # TypeScript configuration
+└── README.md               # Web app documentation
+```
+
+### Key Files
+- **src/app/api/**: Contains Next.js API routes for backend functionality
+- **src/services/api.ts**: Configures Axios for API calls
+- **src/components/chat/**: Contains chat UI components
+- **.env.local** and **.env.production**: Environment-specific configuration
+
+## 3. Documentation
+
+### Folder Structure
+```
+Documentation/
+├── Architecture/
+│   ├── wingmanweb_architecture.md
+│   ├── mac_client_architecture.md
+│   └── communication_protocol.md
+├── API/
+│   ├── backend_api_docs.md
+│   └── js_bridge_api.md
+├── Deployment/
+│   ├── alicloud_deployment.md
+│   └── local_development.md
+└── User_Guides/
+    ├── mac_app_guide.md
+    └── web_app_guide.md
+```
+
+### Key Files
+- **wingmanweb_architecture.md**: Detailed web app architecture documentation
+- **communication_protocol.md**: JavaScript bridge protocol specification
+- **alicloud_deployment.md**: AliCloud deployment instructions
+
+## 4. Configuration Files
+
+### Mac Client Config (`Wingman/Resources/config.json`)
+```json
+{
+  "environment": "development",
+  "webApp": {
+    "url": "http://localhost:3000",
+    "apiBaseUrl": "http://localhost:3000/api"
+  },
+  "communication": {
+    "bridgeProtocolVersion": "1.0",
+    "timeout": 5000
+  },
+  "featureFlags": {
+    "enableDebugMode": true
+  }
+}
+```
+
+### Web App Environment Variables (`WingmanWeb/.env.local`)
+```env
+# Frontend
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+NEXT_PUBLIC_APP_ENV=development
+
+# Backend (API Routes)
+DATABASE_URL=mysql://root:password@localhost:3306/wingman_dev
+JWT_SECRET=your_jwt_secret
+```
+
+## 5. Key Integration Points
+
+### 1. Mac Client → Web App
+- **File**: `Wingman/Sources/WingmanUI/Views/WingmanPanel.swift`
+- **Integration**: WKWebView loading web app URL from config.json
+
+### 2. Web App → Backend API
+- **File**: `WingmanWeb/src/services/api.ts`
+- **Integration**: Axios client calling API endpoints
+
+### 3. JavaScript Bridge
+- **File**: `Wingman/Sources/WingmanUI/Views/WingmanPanel.swift`
+- **Integration**: WKScriptMessageHandler setup for communication
+
+## 6. Development Workflow
+
+### Local Development
+1. **Start Web App**: `cd WingmanWeb && npm run dev`
+2. **Start Mac App**: `cd Wingman && swift run`
+3. **Database**: Local MySQL or Docker container
+
+### Production Deployment
+1. **Build Web App**: `cd WingmanWeb && npm run build`
+2. **Deploy to AliCloud**: Upload build output to AliCloud
+3. **Update Mac App Config**: Change web app URL in config.json
+
+This folder structure provides a clear separation of concerns while maintaining the decoupled architecture described in the proposal. It allows for independent development of the Mac client and web app, while providing a structured approach for integration and deployment.

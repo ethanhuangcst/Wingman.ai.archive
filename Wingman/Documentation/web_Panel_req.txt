@@ -1,0 +1,277 @@
+-------------------------
+-------------------------
+-------------------------
+# Feature ID: F-001
+- Feature name: Wingman Panel UI
+- Feature type: Web
+-----------------------------------
+DONE: Login and AI Connection
+-----------------------------------
+## User Story ID: US-001
+As a user, I want to see the Wingman Panel as the main UI after logging in successfully, so that I can access the application's core functionality
+
+### Acceptance Criterial ID: US-001-001
+Scenario: Login and redirect to Wingman-Panel
+Given: The user has valid login credentials
+When: The user enters their credentials and clicks the login button
+Then: The system should authenticate the user
+AND redirect them to the Wingman Panel page
+AND Initialize WingmanPanel page according to US-001-004
+
+### Acceptance Criterial ID: US-001-002
+Scenario: Already logged in and access Wingman-Panel by URL
+Given: The user is already logged in
+When: The user navigates to the application root URL
+Then: The system should recognize the user's authenticated state
+AND display the Wingman Panel UI directly
+AND Initialize WingmanPanel page according to US-001-004
+
+### Acceptance Criterial ID: US-001-003
+Scenario: Create AI API connection
+Given: The user is logged in
+When: Wingman-panel is loaded
+Then: The system should call AI_API_CONNECTION to establish a AI connection using the user's API key, API provider, and the configuration information
+
+
+### Acceptance Criterial ID: US-001-004
+Scenario: Initialize WingmanPanel page with AI connection established
+Given: The WingmanPanel page is loaded
+AND AI_API_CONNECTION successfully establishes a connection
+When: The AI connection is established successfully
+Then: The WingmanPanel page will be loaded with:
+- A header, defined in US-003
+- A footer, defined in US-004
+- A main section, defined in US-005
+
+### Acceptance Criterial ID: US-001-005
+Scenario: Display Error with AI connection failure
+Given: The WingmanPanel page is loaded
+AND AI_API_CONNECTION fails to establish a connection
+When: The AI connection attempt fails
+Then: The system should display the message: "Cannot connect to AI provider, please check your API Key and provider settings in Account Setting"
+AND make "Account Setting" a link pointing to the Settings page with the current user information
+
+-----------------------------------
+DONE: Login alternative path
+-----------------------------------
+## User Story ID: US-002
+As a user, I want to be redirected to the login page if I try to access the Wingman Panel without being logged in, so that my session is secure and I can authenticate before accessing protected content
+
+### Acceptance Criterial ID: US-002-001
+Scenario: Not logged in and access Wingman-Panel
+Given: The user is not logged in
+When: The user tries to access the Wingman Panel page directly
+Then: The system should detect the unauthenticated state
+AND redirect the user to the login page
+
+### Acceptance Criterial ID: US-002-002
+Scenario: Redirect back to Wingman-panel after login
+Given: The user is redirected to the login page from the Wingman Panel
+When: The user successfully logs in
+Then: The system should redirect the user back to the Wingman Panel page
+
+### Acceptance Criterial ID: US-002-003
+Scenario: Session expired
+Given: The user's session has expired
+When: The user tries to access the Wingman Panel page
+Then: The system should detect the expired session
+AND redirect the user to the login page
+
+### Acceptance Criterial ID: US-002-004
+Scenario: Log out
+Given: The user is logged in
+When: The user clicks the logout button
+Then: The system should end the user's session
+AND redirect the user to the login page
+
+-----------------------------------
+DONE: Wingman-Panel Header
+-----------------------------------
+## User Story ID: US-003
+As a user, I want to see a header with logo, app name, user greeting, profile image, and logout button, so that I can easily identify the application and manage my session
+
+### Acceptance Criterial ID: US-003-001
+Scenario: Display header
+Given: The user is logged in to the Wingman Panel
+When: The Wingman Panel page loads
+Then: The header should display the Wingman logo (/Resources/logo.png) on the left
+AND display the app name "Wingman" next to the logo
+AND display "Hello, [User Name]" on the right
+AND the User Name is a URL pointing to Settings page to edit that user's information
+AND display a fixed-size thumbnail of the user's profile image
+AND display a logout button
+
+### Acceptance Criterial ID: US-003-002
+Scenario: Log out from header
+Given: The user is logged in to the Wingman Panel
+When: The user clicks the logout button
+Then: The system should end the user's session
+AND redirect the user to the login page
+
+### Acceptance Criterial ID: US-003-003
+Scenario: Default profile image if not set
+Given: The user has no profile image set
+When: The Wingman Panel page loads
+Then: The header should display a default profile image placeholder
+
+-----------------------------------
+DONE: Wingman-Panel Footer
+-----------------------------------
+## User Story ID: US-004
+As a user, I want to see a footer with small logo, app name, and copyright information, so that I can identify the application and understand its ownership
+
+### Acceptance Criterial ID: US-004-001
+Scenario: Display footer
+Given: The user is on the Wingman Panel page
+When: The page loads completely
+Then: The footer should display a small version of the Wingman logo
+AND display "Wingman AI" next to the logo
+AND display "@copyright reserved"
+AND be positioned at the bottom of the page
+AND all content aligned to left
+
+### Acceptance Criterial ID: US-004-002
+Scenario: Footer remains consistent
+Given: The user navigates to different sections within the Wingman Panel
+When: The new section loads
+Then: The footer should remain consistent across all panel pages
+
+-----------------------------------
+DONE: Wingman-Panel main section UI
+-----------------------------------
+## User Story ID: US-005
+As a user, I want to see the main section divided into two columns: "Historical Chats" on the left and "AI Chat" on the right ("AI Chat" text should be hidden), so that I can easily access both features
+
+### Acceptance Criterial ID: US-005-001
+Scenario: Main section UI
+Given: The user is on the Wingman Panel page
+When: The page loads
+Then: The main content area should be divided into two columns
+AND the left column should be labeled "Chat History"
+AND the left column has a fixed width of 300px
+AND the left column has a fixed height of 680px
+AND the right column should not display any label
+AND the right column has a fixed width of 900px
+AND the right column has a fixed height of 680px
+AND both columns should be visible and properly sized
+
+### Acceptance Criterial ID: US-005-002
+Scenario: Resize browser
+Given: The user is on the Wingman Panel page
+When: The user resizes their browser window
+Then: The two-column layout should adjust responsively
+AND maintain its structure across different screen sizes
+
+### Acceptance Criterial ID: US-005-003
+Scenario: Interact between columns
+Given: The user is on the Wingman Panel page
+When: The user interacts with content in one column
+Then: The other column should remain visible and accessible
+AND the layout should not break
+
+-----------------------------------
+DONE: Wingman-Panel Predefined Prompts UI
+-----------------------------------
+## User Story ID: US-006
+As a user, I want to see all pre-defined prompts from a horizontal list above the "What's in your mind?" text field, so that I can reuse them
+
+### Acceptance Criterial ID: US-006-001
+Scenario: "Predefined Prompt" horizontal scroll view UI
+Given: The user is on the Wingman Panel page
+When: The page loads completely
+Then: It should display a fixed width (40px) horizontal section "Predefined Prompts" above the "What's in your mind?" text field
+AND this section has 5px margin top and 5px margin bottom
+AND  The label "Predefined Prompts" will not be displayed
+AND it contains 2 elements in one line: all predefined prompts + a "Manage prompts" button
+AND all the predefined prompts will be put in a horizontal scroll view with fixed width of 800px with left and right arrow
+AND the "manage prompts" button should have no label, just display a "manage" icon (/Resource/icon_settings.svg, 20x20 px), with the same background color, next to the scroll view, aligned to right
+
+-----------------------------------
+DONE: Wingman-Panel What's in your mind? UI
+-----------------------------------
+## User Story ID: US-007
+As a user, I want to see a text field labeled "What's in your mind?" aligned to bottom, so that I can easily create and save prompts
+
+### Acceptance Criterial ID: US-007-001
+Scenario: "What's in your mind?" text field UI, and cursor by default activated
+Given: The user is on the Wingman Panel page
+When: The page loads completely
+Then: The right column should display a text field aligned to bottom
+AND the text field should be labeled "What's in your mind?"
+AND the text field should have a fixed height of 150px
+AND the text field should span the full width of the column
+AND the text field should have proper padding and styling
+AND the cursor should be by default activated in the "What's in your mind?" text field
+
+### Acceptance Criterial ID: US-007-002
+Scenario: Buttons inside "What's in your mind?" text field
+Given: The user is on the Wingman Panel page
+When: The user looks at the "What's in your mind?" text field
+Then: The text field should display 2 buttons at the bottom
+AND the 2 buttons are placed together, aligned to right, square shape with same size
+AND the left button should not have any label, only displays a attachment icon (/Resource/icon_upload.svg, 20x20 px), with the same background color
+AND the right button should not have any label, only displays a send icon (/Resource/icon_send.svg, 20x20 px), with the same background color
+AND the 2 buttons have a padding of 0px in between
+AND the 2 buttons are aligned to right
+
+### Acceptance Criterial ID: US-007-003
+Scenario: Pressing "Command+enter"  would be the equivalent of clicking the send button
+Given: The user is on the Wingman Panel page
+AND there are text in the text field "What's in your mind?"
+When: The user presses the "Command+enter" from keyboard
+Then: It would be the equivalent of clicking the "send" buttpn
+
+### Acceptance Criterial ID: US-007-004
+Scenario: "What's in your mind?" text field allow keyboard typing
+Given: The user is on the Wingman Panel page
+When: The user clicks on the "What's in your mind?" text field
+Then: The text field should become active
+AND the keyboard typing will be recognized and allowed for input
+
+### Acceptance Criterial ID: US-007-005
+Scenario: "What's in your mind?" text field allow upload attachments inside text field
+Given: The "What's in your mind?" text field is loaded
+When: The user clicks the "Attachment" button
+Then: The user will not navigate to a different page
+AND a pop-up window will float on top of the current page to select files they want to attach
+AND the files will be displayed as small file thumbnail (40x40px) inside the "What's in your mind?" text field, aligned to top left, above the text
+AND when mouse hover-over the attachment icon, a small "delete" floating icon will appear to allow the user to delete that attachment
+
+### Acceptance Criterial ID: US-007-006
+Scenario: Delete uploaded attachments from "What's in your mind?" text field
+Given: The "What's in your mind?" text field is loaded
+AND there are attachments uploaded already
+AND displayed as file thumbnail icons
+AND the user mouse hover-over one file thumbnail and see the "delete" floating icon
+When: The user clicks "delete"
+Then: The attachment will be directly removed from the "What's in your mind?" text field
+AND The file thumbnail icon will disappear
+
+### Acceptance Criterial ID: US-007-007
+Scenario: "Send" button disabled when "What's in your mind?" text field does not have any input
+Given: The "What's in your mind?" text field is loaded
+When: The "What's in your mind?" text field does not have any input
+Then: The "Send" button will be disabled
+
+-----------------------------------
+DONE: Wingman-Panel Read-only Chat UI
+-----------------------------------
+## User Story ID: US-008
+As a user, I want to see a read-only field above the "What's in your mind?" field, so that I can view context or previous interactions
+
+### Acceptance Criterial ID: US-008-001
+Scenario: Display read-only chat field
+Given: The user is on the Wingman Panel page
+When: The page loads completely
+Then: The right column should display a read-only field above "Predefined Prompts" section with 5px margin
+AND the read-only field should have a fixed height of 458px
+AND the read-only field should span the full width of the column
+AND the read-only field should have proper padding and styling
+AND the read-only field should not allow user input
+
+### Acceptance Criterial ID: US-008-002
+Scenario: Read-only field remains visible during interaction
+Given: The user is on the Wingman Panel page
+When: The user interacts with the "What's in your mind?" field
+Then: The read-only field should remain visible above it
+AND the layout should maintain its structure

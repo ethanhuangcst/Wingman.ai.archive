@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+/* Fixed size container for all pages */
+.page-container {
+  width: 1200px;
+  height: 800px;
+  max-width: 1200px;
+  max-height: 800px;
+  min-width: 1200px;
+  min-height: 800px;
+  margin: 0 auto;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Ensure no overflow on any element */
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent scrollbars on main content */
+.main-content {
+  overflow: hidden;
+}
+
+/* Ensure modals and popups fit within fixed dimensions */
+.modal, .popup {
+  max-width: 90%;
+  max-height: 90%;
+  margin: auto;
+}

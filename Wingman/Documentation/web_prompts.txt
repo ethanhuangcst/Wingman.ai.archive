@@ -1,0 +1,296 @@
+-----------------------------------
+Predefined prompt
+-----------------------------------
+
+# Feature ID: F-001
+- Feature name: Prompt Management
+- Feature type: Web
+
+-----------------------------------
+Predefined prompt scroll view
+-----------------------------------
+
+## User Story ID: US-001
+As a user, I want to see my saved prompts in the scroll view "Predefined Prompts" in Wingman Panel, so that I can easily access and manage my previously created prompts
+
+### Acceptance Criterial ID: US-001-000
+Scenario: Define "Predefined Prompt"
+Given: The system is designed to store user prompts
+When: The database schema is defined
+Then: The Prompt entity should have the following structure:
+- UUID: Unique identifier for the prompt
+- User_ID: Foreign key linking to the user
+- Prompt_name: Name of the prompt
+- Prompt_text: Full text of the prompt
+- Created_datetime: Timestamp when the prompt was created
+- Updated_datetime: Timestamp when the prompt was last updated
+
+### Acceptance Criterial ID: US-001-001
+Scenario: Load "Predefined Prompt" with existing prompts
+Given: The user is logged in to the Wingman Panel
+AND the user has saved prompts
+When: The page loads completely
+Then: The "Predefined Prompts" scroll view will load all predefined prompts belonging to the current user
+AND the prompts should be ordered by updated_datetime, newest on top
+AND each prompt should display as: "#" + space + prompt name
+AND the prompt name will be trimmed to 20 characters and have "..." at the right end
+
+### Acceptance Criterial ID: US-001-002
+Scenario: Load "Predefined Prompt" with no existing prompts
+Given: The user is logged in to the Wingman Panel
+AND the user has no saved prompts
+When: The page loads completely
+Then: A message shows "No predefined prompts." instead of the scroll view
+
+### Acceptance Criterial ID: US-001-003
+Scenario: Hover-over "Predefined Prompt" with short name
+Given: The user is on the Wingman Panel
+AND the user has a saved prompt with a short name (less than 30 characters)
+When: The user hovers over the prompt name
+Then: The system should display the full prompt name as a tooltip
+
+### Acceptance Criterial ID: US-001-004
+Scenario: Hover-over "Predefined Prompt" with long name
+Given: The user is on the Wingman Panel
+AND the user has a saved prompt with a long name (more than 30 characters)
+When: The user hovers over the truncated prompt name for 0.5sec
+Then: The system should display the full prompt name as a tooltip
+
+### Acceptance Criterial ID: US-001-005
+Scenario: Click "Predefined Prompt" to paste into text field - no text selected
+Given: The user is on the Wingman Panel
+AND the "What's in your mind?" text field has text
+AND no text has been selected in "What's in your mind" text field
+When: The user clicks on a prompt name
+Then: The prompt text will be added into the "What's in your mind?" text field
+AND placed ahead of the original text, with a line break
+AND do not delete the original text
+AND the newly inserted prompt text will be selected
+
+### Acceptance Criterial ID: US-001-006
+Scenario: Click "Predefined Prompt" to paste into text field - with text selected
+Given: The user is on the Wingman Panel
+AND the "What's in your mind?" text field has text
+AND there is text has been selected in "What's in your mind" text field
+When: The user clicks on a prompt name
+Then: The prompt text will be added into the "What's in your mind?" text field
+AND replace the text that has been selected
+AND do not change the other part in the original text
+AND the newly inserted prompt text will be selected
+
+### Acceptance Criterial ID: US-001-007
+Scenario: Scroll through "Predefined Prompts" with many prompts
+Given: The user is on the Wingman Panel
+AND the user has many saved prompts (more than can fit in the scroll view)
+When: The user scrolls horizontally through the predefined prompts
+Then: The user should be able to see all prompts by scrolling
+AND the scroll view should display left and right navigation arrows
+
+### Acceptance Criterial ID: US-001-008
+Scenario: Load "Predefined Prompts" with API error
+Given: The user is logged in to the Wingman Panel
+AND there is an API error when fetching prompts
+When: The page loads completely
+Then: An error message should be displayed instead of the prompts
+AND the error message should be clear and user-friendly
+
+### Acceptance Criterial ID: US-001-009
+Scenario: Arrow behavior when prompts fit in scroll view
+Given: The user is on the Wingman Panel
+AND the user has only a few saved prompts (all fit in the scroll view without scrolling)
+When: The page loads completely
+Then: The left and right navigation arrows should not appear
+AND the prefined prompts will aligned to left edge of "What's in your mind" text field
+
+### Acceptance Criterial ID: US-001-010
+Scenario: Arrow behavior when scrolling to first prompt
+Given: The user is on the Wingman Panel
+AND the user has many saved prompts (requiring scrolling)
+When: The user scrolls to the first prompt
+Then: The left navigation arrow should be disabled
+AND the right navigation arrow should remain enabled
+
+### Acceptance Criterial ID: US-001-011
+Scenario: Arrow behavior when scrolling to last prompt
+Given: The user is on the Wingman Panel
+AND the user has many saved prompts (requiring scrolling)
+When: The user scrolls to the last prompt
+Then: The right navigation arrow should be disabled
+AND the left navigation arrow should remain enabled
+
+### Acceptance Criterial ID: US-001-012
+Scenario: Swipe left/right on predefined prompts
+Given: The user is on the Wingman Panel
+AND the user has many saved prompts (requiring scrolling)
+When: The user swipes left or right on the predefined prompts scroll view
+Then: The scroll view should respond to the swipe gesture
+AND scroll in the direction of the swipe
+AND the arrow states should update accordingly
+
+-----------------------------------
+Manage prompt
+-----------------------------------
+
+## User Story ID: US-002
+As a user, I want to manage my predefined prompts through a dedicated management interface, so that I can keep my prompts organized and up-to-date
+
+### Acceptance Criterial ID: US-002-001
+Scenario: Navigate to Prompt Management page
+Given: The user is on the Wingman Panel
+When: The user clicks the "Manage Prompts" button in the "Predefined Prompt" section
+Then: The user should be redirected to the "Predefined Prompts" management page
+
+### Acceptance Criterial ID: US-002-002
+Scenario: Prompt Management page layout
+Given: The user is on the Prompt Management page
+When: The page loads completely
+Then: The system should display:
+1. A page title "Edit your prompts" aligned to the left
+2. A return button (only display icon, no title, transparent background, /Resources/icon_return.svg, 20x20px)
+3. All predefined prompts in a list ordered by updated_datetime, showing just the prompt names
+4. Each prompt is displayed as 1 single line, with a fixed height of 50px
+5. Prompt name displayed with format: prompt name aligned to left, + last edited datetime aligned to right
+6. At the end of each prompt, add a edit button (only display icon, transparent background, no title, /Resources/icon_prmp_edit.svg, 20x20px)
+7. Below the prompts list, a Create button with icon (only display icon, transparent background, no title, /Resources/icon_prmp_new.svg, 20x20px) aligned to right
+
+### Acceptance Criterial ID: US-002-003
+Scenario: Hover over prompt to view details
+Given: The user is on the Prompt Management page
+AND the page has loaded with existing prompts
+When: The user hovers the mouse over a prompt for 0.5 second
+Then: The system should display the full prompt text formatted as Markdown, with a fixed width of 1000px and scroll bar when it is too long
+
+### Acceptance Criterial ID: US-002-004
+Scenario: Open "Create new prompt" floating frame
+Given: The user is on the Prompt Management page
+When: The user clicks the "Create" button
+Then: The user will stay at the current page
+AND a floating frame will pop up, with Prompt name and Prompt text fields
+AND two buttons:
+- Cancel (only display icon, transparent background, no title, /Resources/icon_cancel.svg, 20x20px)
+- Save (only display icon, transparent background, no title, /Resources/icon_update.svg, 20x20px)
+AND the Prompt name field will be activated
+
+### Acceptance Criterial ID: US-002-005
+Scenario: Save button disabled when no input in pop-up floating frame
+Given: The user has clicked Create button 
+AND Create Prompt floating frame is already open
+When: There is no input in text field Prompt Name or Prompt Text
+Then: The Save button should be disabled
+
+### Acceptance Criterial ID: US-002-006
+Scenario: Create and save a Prompt in pop-up floating frame
+Given: The user has clicked Create button
+AND Create Prompt floating frame is already open
+When: The user enters the prompt name or text
+AND clicks the "Save" button
+Then: The prompt should be saved
+AND a new prompt will be saved to database
+AND a success message should be displayed (1s)
+AND the pop-up floating frame will be closed
+AND the updated prompt should appear in the list
+
+### Acceptance Criterial ID: US-002-007
+Scenario: Cancel create Prompt in pop-up floating frame
+Given: The user has clicked Create button
+AND Create Prompt floating frame is already open
+When: The user clicks the "cancel" button
+AND confirms "Discard all changes"
+Then: The change on Prompt name or text will not be changed
+AND no new prompt record will be added to database
+AND the form will be closed
+
+### Acceptance Criterial ID: US-002-008
+Scenario: Open Edit Prompt pop-up floating frame
+Given: The user is on the Prompt Management page
+AND the user has existing prompts
+When: The user clicks the "Edit" button
+Then: The user will stay at the current page
+AND a floating frame will pop up, with Prompt name and Prompt text pre-loaded
+AND the prompt text is displayed in Markdown format
+AND there are 3 buttons below the Prompt Text:
+- Cancel (only display icon, transparent background, no title, /Resources/icon_cancel.svg, 20x20px)
+- Delete (only display icon, transparent background, no title, /Resources/icon_prmp_delete.svg, 20x20px)
+- Save (only display icon, transparent background, no title, /Resources/icon_update.svg, 20x20px)
+
+### Acceptance Criterial ID: US-002-009
+Scenario: Save button disabled when no changes in pop-up floating frame
+Given: The user has clicked Edit button for a prompt
+AND Edit Prompt floating frame is already open
+AND the prompt information is correctly displayed
+When: There is no change made to Prompt Name or Prompt Text
+Then: The Save button should be disabled
+
+### Acceptance Criterial ID: US-002-010
+Scenario: Edit Prompt in pop-up floating frame
+Given: The user has clicked Edit button for a prompt
+AND Edit Prompt floating frame is already open
+AND the prompt information is correctly displayed
+When: The user edit the prompt name or text
+AND clicks the "Save" button
+Then: The prompt should be updated
+AND all information saved to database
+AND a success message should be displayed (1s)
+AND the pop-up floating frame will be closed
+AND the updated prompt should appear in the list
+
+### Acceptance Criterial ID: US-002-011
+Scenario: Cancel edit Prompt in pop-up floating frame
+Given: The user has clicked Edit button for a prompt
+AND Edit Prompt floating frame is already open
+AND the prompt information is correctly displayed
+When: The user clicks the "cancel" button
+AND confirms "Discard all changes"
+Then: The change on Prompt name or text will not be changed
+AND the prompt record in database will not be updated
+AND the form will be closed
+
+### Acceptance Criterial ID: US-002-012
+Scenario: Delete prompt
+Given: The user has opened the edit prompt form
+When: The user clicks the delete button
+AND confirms the deletion
+Then: The prompt should be deleted
+AND a success message should be displayed
+AND the form should close
+AND the prompt should be removed from the list
+
+### Acceptance Criterial ID: US-002-013
+Scenario: Return to Wingman Panel
+Given: The user is on the Prompt Management page
+When: The user clicks the return button
+Then: The user should be redirected back to the Wingman Panel
+
+### Acceptance Criterial ID: US-002-014
+Scenario: No prompts available
+Given: The user is on the Prompt Management page
+AND the user has no existing prompts
+When: The page loads
+Then: The system should display a message indicating no prompts exist
+AND the create button should still be available
+
+### Acceptance Criterial ID: US-002-015
+Scenario: Network error when loading prompts
+Given: The user is on the Prompt Management page
+AND there is a network connection issue
+When: The page attempts to load prompts
+Then: The system should display an error message
+AND the create button should still be available
+
+### Acceptance Criterial ID: US-002-016
+Scenario: Network error when saving prompt
+Given: The user has filled out the create or edit form
+AND there is a network connection issue
+When: The user clicks the save button
+Then: The system should display an error message
+AND the form should remain open
+
+### Acceptance Criterial ID: US-002-017
+Scenario: Network error when deleting prompt
+Given: The user has opened the edit form
+AND there is a network connection issue
+When: The user clicks the delete button
+AND confirms deletion
+Then: The system should display an error message
+AND the prompt should still appear in the list
+

@@ -1,0 +1,21 @@
+
+
+qwen-plus
+sk-b87bcf7a745644a8bd72b5cea88d6f27
+
+gpt-5.2-all
+
+sk-VdihYuyJpOjAC8Qv6kmkYVT56mRaG3nkkjHm0lTIxZ38ub3O
+
+https://openaiss.com/
+https://openaiss.com/v1/
+https://openaiss.com/v1/chat/completions
+
+DB
+101.132.156.250
+33320
+user name:
+wingman_db_usr_8a2Xy
+
+password:
+Z8#kP2@vQ7$mE5!tR3&wX9*yB4

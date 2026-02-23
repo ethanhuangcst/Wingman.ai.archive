@@ -1,0 +1,483 @@
+# F-001
+- Feature name: User Authentication
+- Feature type: Web
+- Description: Handles user registration, login, password reset, and session management
+
+## US-001
+As a new user, I want to register an account, so that I can access the Wingman app
+
+### US-001-001
+Scenario: Register with valid information
+Given: The registration page is loaded
+AND all required fields are empty
+AND the page has a desktop style look and feel
+AND input fields have dark font color for visibility
+When: I enter a valid username (3-50 characters)
+AND enter a valid email address
+AND enter a strong password (at least 8 characters)
+AND upload a profile image using the file upload box
+AND the file size is limited to 2MB
+AND crop the image to be square in the pop-up preview window
+AND enter a valid API key
+AND select an AI provider (Qwen or PlanB)
+AND click the "Register" button
+Then: The system should create a new user account
+AND encrypt the password using bcrypt
+AND generate a UUID for the user
+AND save the user information (including API key and provider) to the MySQL database
+AND redirect to the login page
+AND display a success message: "Registration successful! Please login to continue."
+
+### US-001-002
+Scenario: Register with invalid email
+Given: The registration page is loaded
+AND all required fields are empty
+AND the page has a desktop style look and feel
+AND input fields have dark font color for visibility
+When: I enter a valid username
+AND enter an invalid email address (e.g., "invalid-email")
+AND enter a strong password
+AND upload a profile image using the file upload box
+AND enter a valid API key
+AND select an AI provider
+AND click the "Register" button
+Then: The system should display an error message: "Please enter a valid email address"
+AND not create a user account
+
+### US-001-003
+Scenario: Register with existing email
+Given: The registration page is loaded
+AND all required fields are empty
+AND the page has a desktop style look and feel
+AND input fields have dark font color for visibility
+AND a user with the same email already exists in the MySQL database
+When: I enter a valid username
+AND enter the existing email address
+AND move to the next field
+Then: The system should display an error message: "Email already registered"
+AND not create a user account
+
+### US-001-004
+Scenario: Register with missing API key
+Given: The registration page is loaded
+AND all required fields are empty
+AND the page has a desktop style look and feel
+AND input fields have dark font color for visibility
+When: I enter a valid username
+AND enter a valid email address
+AND enter a strong password
+AND upload a profile image using the file upload box
+AND leave the API key field empty
+AND select an AI provider
+AND click the "Register" button
+Then: The user account should be created
+AND user sees a pop-up message: "You need an API key to connect to AI services, please update later."
+AND redirect to the login page
+
+### US-001-005
+Scenario: Register with weak password
+Given: The registration page is loaded
+AND all required fields are empty
+AND the page has a desktop style look and feel
+AND input fields have dark font color for visibility
+When: I enter a valid username
+AND enter a valid email address
+AND enter a weak password (less than 8 characters)
+AND upload a profile image using the file upload box
+AND enter a valid API key
+AND select an AI provider
+AND click the "Register" button
+Then: The system should display an error message: "Password must be at least 8 characters"
+AND not create a user account
+
+## US-002
+As a registered user, I want to login with my email and password, so that I can access the Wingman app
+
+### US-002-001
+Scenario: Login with valid credentials
+Given: The login page is loaded
+AND all fields are empty
+When: I enter a registered email address
+AND enter the correct password
+AND click the "Login" button
+Then: The system should verify the credentials
+AND create a secure session
+AND redirect to the Panel page
+
+### US-002-002
+Scenario: Login with invalid email
+Given: The login page is loaded
+AND all fields are empty
+When: I enter an unregistered email address
+AND enter a password
+AND click the "Login" button
+Then: The system should display an error message: "Invalid email or password"
+AND not log the user in
+
+### US-002-003
+Scenario: Login with incorrect password
+Given: The login page is loaded
+AND all fields are empty
+When: I enter a registered email address
+AND enter an incorrect password
+AND click the "Login" button
+Then: The system should display an error message: "Invalid email or password"
+AND not log the user in
+
+### US-002-004
+Scenario: Login with empty fields
+Given: The login page is loaded
+AND all fields are empty
+When: I click the "Login" button without entering any information
+Then: The system should display error messages: "Email is required" and "Password is required"
+AND not log the user in
+
+### US-002-005
+Scenario: Password not displayed in URL after login
+Given: The login page is loaded
+AND all fields are empty
+When: I enter a registered email address
+AND enter the correct password
+AND click the "Login" button
+Then: The system should log the user in
+AND redirect to the Wingman Panel page
+AND the password should not appear in the browser address bar
+
+## US-003
+As a user, I want to enable "Remember me" option, so that I don't have to login again next time
+
+### US-003-001
+Scenario: Login with "Remember me" enabled
+Given: The login page is loaded
+AND all fields are empty
+When: I enter a registered email address
+AND enter the correct password
+AND check the "Remember me" checkbox
+AND click the "Login" button
+Then: The system should log the user in
+AND redirect to the Panel page
+AND create a persistent session cookie (valid for 30 days)
+AND automatically log the user in on subsequent visits
+
+### US-003-002
+Scenario: Login with "Remember me" disabled
+Given: The login page is loaded
+AND all fields are empty
+When: I enter a registered email address
+AND enter the correct password
+AND uncheck the "Remember me" checkbox
+AND click the "Login" button
+Then: The system should log the user in
+AND redirect to the Panel page
+AND create a session cookie (valid for current session only)
+AND require login on subsequent visits
+
+## US-004
+As a user, I want to reset my password if I forget it, so that I can regain access to my account
+
+### US-004-001
+Scenario: Reset password with valid email
+Given: The login page is loaded
+AND the "Forgot password" link is visible
+When: I click the "Forgot password" link
+AND enter a registered email address
+AND click the "Reset Password" button
+Then: The system should send a password reset link to the email
+AND display a success message: "Password reset link sent! Please check your email."
+
+### US-004-002
+Scenario: Reset password with invalid email
+Given: The login page is loaded
+AND the "Forgot password" link is visible
+When: I click the "Forgot password" link
+AND enter an unregistered email address
+AND click the "Reset Password" button
+Then: The system should display an error message: "Email not found"
+AND not send a password reset link
+
+### US-004-003
+Scenario: Reset password using the reset link
+Given: The user has received a password reset email
+AND the reset link is valid (not expired)
+When: I click the reset link
+AND enter a new strong password
+AND click the "Save Password" button
+Then: The system should update the user's password
+AND redirect to the login page
+AND display a success message: "Password reset successful! Please login with your new password."
+
+# F-002
+- Feature name: User Account Management
+- Feature type: Web
+- Description: Handles user account settings, profile updates, and AI connection management
+
+## US-005
+As a logged-in user, I want to edit my account information, so that I can update my profile details
+
+### US-005-001
+Scenario: Edit account with valid information
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I update the username
+AND upload a profile image using the file upload box
+AND the file size is limited to 2MB
+AND crop the image to be square in the pop-up preview window
+AND update the API key
+AND select an AI provider
+AND click the "Save Changes" button
+Then: The system should update the user's information in the database
+AND display a success message: "Changes saved successfully!"
+AND redirect to the Panel page
+
+### US-005-002
+Scenario: Edit account with invalid email
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I enter an invalid email address
+AND click the "Save Changes" button
+Then: The system should display an error message: "Please enter a valid email address"
+AND not update the user's information
+
+### US-005-003
+Scenario: Edit account with empty required fields
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I clear the username field
+AND click the "Save Changes" button
+Then: The system should display an error message: "Username is required"
+AND not update the user's information
+
+### US-005-004
+Scenario: Edit account with existing email
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+AND another user with a different email already exists in the database
+When: I enter the email address of the existing user
+AND click the "Save Changes" button
+Then: The system should display an error message: "Email already in use"
+AND not update the user's information
+
+### US-005-005
+Scenario: Edit account with same information
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I leave all fields unchanged
+AND click the "Save Changes" button
+Then: The system should display a message: "No changes were made"
+AND not update the user's information
+
+### US-005-006
+Scenario: Cancel account edit
+Given: The user is logged in
+AND the account settings page is loaded
+When: I click the "Cancel" button
+Then: The system should discard all changes
+AND revert the fields to their original values
+AND redirect to the Panel page
+
+## US-007
+As a Wingman user, I want to configure multiple AI connection settings with API keys and providers, so that I can connect to different AI models
+
+### US-007-001
+Scenario: Configure multiple AI connection settings
+Given: The user is on the account settings page
+AND the settings page displays a list of AI connection settings
+AND each row has: API Key text box, Provider dropdown, Delete button, and API Test button
+AND provider options are loaded from configuration (not hardcoded)
+AND the list has a vertical scrollbar if there are many entries
+When: The user adds a new AI connection setting
+AND enters a valid API Key
+AND selects an AI Provider from the dropdown
+AND clicks the "Save Changes" button
+Then: The system should save the AI connection settings to the database
+AND display a success message: "Changes saved successfully!"
+AND use these settings for future AI model connections
+
+### US-007-002
+Scenario: Test AI connection for a specific setting
+Given: The user has multiple AI connection settings
+AND the account settings page shows an "API Test" button for each setting
+When: The user clicks the "API Test" button for a specific setting
+Then: The system should attempt to connect to the selected AI provider using the provided API key
+AND display the connection test result (PASS/FAIL) for that specific setting
+AND show detailed error message if connection fails
+AND not update any user settings
+
+### US-007-003
+Scenario: Delete an AI connection setting
+Given: The user has multiple AI connection settings
+AND the account settings page shows a "Delete" button for each setting
+When: The user clicks the "Delete" button for a specific setting
+AND confirms the deletion
+Then: The system should remove the selected AI connection setting from the database
+AND update the list of settings on the page
+AND display a success message: "Connection setting deleted successfully!"
+
+### US-007-004
+Scenario: Add a new AI connection setting
+Given: The user is on the account settings page
+AND the settings page has an "Add New" button for AI connection settings
+When: The user clicks the "Add New" button
+Then: The system should add a new row to the AI connection settings list
+AND the new row should have empty fields for API Key and Provider
+AND the user can enter details and save the new setting
+
+## US-008
+As a logged-in user, I want to see a redesigned account settings UI with support for multiple AI providers, so that I can easily manage my account information and AI connections
+
+### US-008-001
+Scenario: View redesigned account settings UI with multiple AI providers
+Given: The user is logged in
+AND the account settings page is loaded
+Then: The page should display fields in the following layout:
+AND row 1: User Name, Email Address
+AND row 2: Password, Confirm Password
+AND row 3: Profile Image
+AND section: AI Connection Settings with a list view
+AND each row in the list has:
+AND Column 1: API Key text box
+AND Column 2: Provider dropdown list (loaded from configuration)
+AND Column 3: Action buttons (Delete + API Test)
+AND an "Add New" button to add new AI connection settings
+AND the list has a vertical scrollbar if there are many entries
+AND all fields have appropriate labels and placeholders
+AND input fields have dark font color for visibility
+
+## US-009
+As a logged-in user, I want to change my password automatically when I enter Password and Confirm Password, so that I don't need a separate change password function
+
+### US-009-001
+Scenario: Change password automatically with matching passwords
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I enter a new strong password (at least 8 characters)
+AND enter the same password in Confirm Password field
+AND click the "Save Changes" button
+Then: The system should verify the passwords match
+AND hash the new password using bcrypt
+AND update the password in the database
+AND display a success message: "Changes saved successfully!"
+
+### US-009-002
+Scenario: Change password with non-matching passwords
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I enter a new password
+AND enter a different password in Confirm Password field
+AND click the "Save Changes" button
+Then: The system should display an error message: "Passwords do not match"
+AND not update the password
+
+### US-009-003
+Scenario: Change password with weak password
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I enter a weak password (less than 8 characters)
+AND enter the same password in Confirm Password field
+AND click the "Save Changes" button
+Then: The system should display an error message: "Password must be at least 8 characters"
+AND not update the password
+
+## US-010
+As a logged-in user, I want Password/Confirm Password and Profile Image to be optional fields, so that I can update other information without changing these
+
+### US-010-001
+Scenario: Save settings without changing password
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I leave Password and Confirm Password fields empty
+AND update other fields (e.g., User Name)
+AND click the "Save Changes" button
+Then: The system should update the changed fields
+AND keep the existing password unchanged
+AND display a success message: "Changes saved successfully!"
+
+### US-010-002
+Scenario: Save settings without uploading profile image
+Given: The user is logged in
+AND the account settings page is loaded
+AND all fields are pre-filled with current user information
+When: I leave Profile Image field unchanged
+AND update other fields (e.g., Email Address)
+AND click the "Save Changes" button
+Then: The system should update the changed fields
+AND keep the existing profile image unchanged
+AND display a success message: "Changes saved successfully!"
+
+## US-011
+As a logged-in user, I want to see UI hints about unchanged fields, so that I understand what will happen when I save
+
+### US-011-001
+Scenario: View UI hints for optional fields
+Given: The user is logged in
+AND the account settings page is loaded
+Then: The page should display hints indicating:
+AND "Password and Confirm Password are optional - leave empty to keep existing password"
+AND "Profile Image is optional - leave unchanged to keep existing image"
+
+### US-011-002
+Scenario: View UI hint when leaving password fields empty
+Given: The user is logged in
+AND the account settings page is loaded
+When: I focus on the Password field and then leave it empty
+Then: The system should display a hint: "Leaving empty will keep your existing password"
+
+### US-011-003
+Scenario: View UI hint when leaving profile image unchanged
+Given: The user is logged in
+AND the account settings page is loaded
+When: I view the Profile Image section
+Then: The system should display a hint: "Leaving unchanged will keep your existing profile image"
+
+## US-012
+As a system administrator, I want provider options to be loaded from configuration, so that I can easily add or remove AI providers without code changes
+
+### US-012-001
+Scenario: Load provider options from configuration
+Given: The system is configured with multiple AI providers
+AND the account settings page is loaded
+When: The user accesses the Provider Selection field
+Then: The system should load provider options from the AI configuration file
+AND display all configured providers as selectable options
+AND not hardcode any provider options
+
+### US-012-002
+Scenario: Add new provider to configuration
+Given: A new AI provider is added to the configuration
+AND the account settings page is loaded
+When: The user accesses the Provider Selection field
+Then: The system should display the new provider as a selectable option
+AND not require any code changes
+
+## US-013
+As a logged-in user, I want to see clear error messages for AI connection failures, so that I can troubleshoot connection issues for each AI provider
+
+### US-013-001
+Scenario: API test with invalid API key for a specific provider
+Given: The user is on the account settings page
+AND the user has entered an invalid API key for a specific AI provider
+AND selected that AI provider
+When: The user clicks the "API Test" button for that specific setting
+Then: The system should attempt to connect to the selected AI provider
+AND display a detailed error message indicating the API key is invalid for that specific setting
+AND not update any user settings
+
+### US-013-002
+Scenario: API test with network error for a specific provider
+Given: The user is on the account settings page
+AND the user has entered a valid API key for a specific AI provider
+AND selected that AI provider
+AND there is a network connectivity issue
+When: The user clicks the "API Test" button for that specific setting
+Then: The system should attempt to connect to the selected AI provider
+AND display a detailed error message indicating network issues for that specific setting
+AND not update any user settings
