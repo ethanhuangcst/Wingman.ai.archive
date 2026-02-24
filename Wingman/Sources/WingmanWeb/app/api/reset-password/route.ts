@@ -83,13 +83,13 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update user's password
-    const result = await db.execute(
+    const result = await db.executeRaw(
       'UPDATE users SET password = ? WHERE id = ?',
       [hashedPassword, decoded.userId]
     );
 
     // Check if password was updated
-    if (!Array.isArray(result) || result.length === 0 || !('affectedRows' in result[0]) || result[0].affectedRows === 0) {
+    if (!result || !Array.isArray(result) || result.length === 0 || !('affectedRows' in result[0]) || result[0].affectedRows === 0) {
       return NextResponse.json(
         {
           success: false,
