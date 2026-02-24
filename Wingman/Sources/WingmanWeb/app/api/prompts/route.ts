@@ -35,8 +35,9 @@ export async function GET(request: NextRequest) {
     }
     
     // Get all prompts for the user, ordered by updated_datetime (most recent first)
+    // Only load prompts with system_flag = 'WINGMAN'
     const prompts = await db.execute(
-      'SELECT id, prompt_name, prompt_text, created_datetime, updated_datetime FROM prompts WHERE user_id = ? ORDER BY updated_datetime DESC',
+      'SELECT id, prompt_name, prompt_text, created_datetime, updated_datetime, system_flag FROM prompts WHERE user_id = ? AND system_flag = "WINGMAN" ORDER BY updated_datetime DESC',
       [userId]
     );
     
@@ -77,10 +78,10 @@ export async function POST(request: NextRequest) {
     const promptId = `prompt-${Date.now()}`;
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
-    // Insert prompt into database
+    // Insert prompt into database with system_flag = 'WINGMAN'
     await db.execute(
-      'INSERT INTO prompts (id, user_id, prompt_name, prompt_text, created_datetime, updated_datetime) VALUES (?, ?, ?, ?, ?, ?)',
-      [promptId, userId, body.name, body.text, now, now]
+      'INSERT INTO prompts (id, user_id, prompt_name, prompt_text, system_flag, created_datetime, updated_datetime) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [promptId, userId, body.name, body.text, 'WINGMAN', now, now]
     );
     
     const newPrompt = {
@@ -130,24 +131,24 @@ export async function PUT(request: NextRequest) {
     
     if (body.name && body.text) {
       await db.execute(
-        'UPDATE prompts SET prompt_name = ?, prompt_text = ?, updated_datetime = ? WHERE id = ? AND user_id = ?',
+        'UPDATE prompts SET prompt_name = ?, prompt_text = ?, system_flag = "WINGMAN", updated_datetime = ? WHERE id = ? AND user_id = ?',
         [body.name, body.text, now, body.id, userId]
       );
     } else if (body.name) {
       await db.execute(
-        'UPDATE prompts SET prompt_name = ?, updated_datetime = ? WHERE id = ? AND user_id = ?',
+        'UPDATE prompts SET prompt_name = ?, system_flag = "WINGMAN", updated_datetime = ? WHERE id = ? AND user_id = ?',
         [body.name, now, body.id, userId]
       );
     } else if (body.text) {
       await db.execute(
-        'UPDATE prompts SET prompt_text = ?, updated_datetime = ? WHERE id = ? AND user_id = ?',
+        'UPDATE prompts SET prompt_text = ?, system_flag = "WINGMAN", updated_datetime = ? WHERE id = ? AND user_id = ?',
         [body.text, now, body.id, userId]
       );
     }
     
     // Get updated prompt
     const updatedPrompts = await db.execute(
-      'SELECT id, prompt_name, prompt_text, created_datetime, updated_datetime FROM prompts WHERE id = ?',
+      'SELECT id, prompt_name, prompt_text, system_flag, created_datetime, updated_datetime FROM prompts WHERE id = ?',
       [body.id]
     );
     
