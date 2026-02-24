@@ -4,13 +4,18 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 
+interface AIConnection {
+  id: string;
+  apiKey: string;
+  apiProvider: string;
+}
+
 interface RegistrationFormData {
   name: string;
   email: string;
   password: string;
   confirmPassword: string;
-  apiKey: string;
-  apiProvider: string;
+  aiConnections: AIConnection[];
   profileImage: File | null;
 }
 
@@ -19,8 +24,7 @@ interface ValidationErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
-  apiKey?: string;
-  apiProvider?: string;
+  aiConnections?: { [key: string]: { apiKey?: string; apiProvider?: string } };
   profileImage?: string;
 }
 
@@ -30,8 +34,7 @@ export default function RegistrationPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    apiKey: '',
-    apiProvider: 'qwen-plus',
+    aiConnections: [],
     profileImage: null
   });
   
@@ -55,19 +58,47 @@ export default function RegistrationPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.providers) {
-            setProviders(data.providers.map((provider: any) => ({
+            const providerList = data.providers.map((provider: any) => ({
               id: provider.id,
               name: provider.name
-            })));
+            }));
+            setProviders(providerList);
+            
+            // Initialize with one empty connection using the first provider
+            if (providerList.length > 0 && formData.aiConnections.length === 0) {
+              const newConnection: AIConnection = {
+                id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                apiKey: '',
+                apiProvider: providerList[0].id,
+              };
+              setFormData(prev => ({
+                ...prev,
+                aiConnections: [newConnection]
+              }));
+            }
           }
         }
       } catch (error) {
         console.error('Error loading providers:', error);
         // Fallback to default providers if loading fails
-        setProviders([
+        const defaultProviders = [
           { id: 'qwen-plus', name: 'qwen-plus' },
           { id: 'gpt-5.2-all', name: 'gpt-5.2-all' }
-        ]);
+        ];
+        setProviders(defaultProviders);
+        
+        // Initialize with one empty connection using the first default provider
+        if (formData.aiConnections.length === 0) {
+          const newConnection: AIConnection = {
+            id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            apiKey: '',
+            apiProvider: defaultProviders[0].id,
+          };
+          setFormData(prev => ({
+            ...prev,
+            aiConnections: [newConnection]
+          }));
+        }
       }
     };
 
@@ -100,12 +131,45 @@ export default function RegistrationPage() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
-    if (!formData.apiKey.trim()) {
-      newErrors.apiKey = 'API Key is required';
-    }
+    // Validate AI connections
+    const connectionErrors: { [key: string]: { apiKey?: string; apiProvider?: string } } = {};
+    const connectionCombinations = new Set<string>();
     
-    if (!formData.apiProvider) {
-      newErrors.apiProvider = 'API Provider is required';
+    if (formData.aiConnections.length === 0) {
+      // At least one connection is required
+      connectionErrors['no-connections'] = { apiKey: 'At least one AI connection is required' };
+    } else {
+      formData.aiConnections.forEach((connection) => {
+        if (connection.apiKey && !connection.apiProvider) {
+          if (!connectionErrors[connection.id]) {
+            connectionErrors[connection.id] = {};
+          }
+          connectionErrors[connection.id].apiProvider = 'Provider is required';
+        }
+        if (connection.apiProvider && !connection.apiKey) {
+          if (!connectionErrors[connection.id]) {
+            connectionErrors[connection.id] = {};
+          }
+          connectionErrors[connection.id].apiKey = 'API Key is required';
+        }
+        
+        // Check for duplicate API key + provider combinations
+        if (connection.apiKey && connection.apiProvider) {
+          const combination = `${connection.apiKey.trim()}:${connection.apiProvider}`;
+          if (connectionCombinations.has(combination)) {
+            if (!connectionErrors[connection.id]) {
+              connectionErrors[connection.id] = {};
+            }
+            connectionErrors[connection.id].apiKey = 'Duplicate API key + provider combination';
+            connectionErrors[connection.id].apiProvider = 'Duplicate API key + provider combination';
+          } else {
+            connectionCombinations.add(combination);
+          }
+        }
+      });
+    }
+    if (Object.keys(connectionErrors).length > 0) {
+      newErrors.aiConnections = connectionErrors;
     }
     
     // Validate profile image
@@ -172,31 +236,189 @@ export default function RegistrationPage() {
         setShowImagePreview(true);
       };
       reader.readAsDataURL(file);
+    } else if (name.startsWith('apiKey-')) {
+      // Handle API key changes for specific connections
+      const connectionId = name.replace('apiKey-', '');
+      setFormData(prev => {
+        const updatedConnections = prev.aiConnections.map(conn => 
+          conn.id === connectionId ? { ...conn, apiKey: value } : conn
+        );
+        
+        // Check for duplicate API key + provider combinations
+        const connectionErrors: { [key: string]: { apiKey?: string; apiProvider?: string } } = {};
+        const connectionCombinations = new Set<string>();
+        
+        updatedConnections.forEach((connection) => {
+          if (connection.apiKey && connection.apiProvider) {
+            const combination = `${connection.apiKey.trim()}:${connection.apiProvider}`;
+            if (connectionCombinations.has(combination)) {
+              if (!connectionErrors[connection.id]) {
+                connectionErrors[connection.id] = {};
+              }
+              connectionErrors[connection.id].apiKey = 'Duplicate API key + provider combination';
+              connectionErrors[connection.id].apiProvider = 'Duplicate API key + provider combination';
+            } else {
+              connectionCombinations.add(combination);
+            }
+          }
+        });
+        
+        // Update errors
+        if (Object.keys(connectionErrors).length > 0) {
+          setErrors(prevErrors => {
+            const newErrors = { ...prevErrors };
+            newErrors.aiConnections = connectionErrors;
+            return newErrors;
+          });
+        } else if (errors.aiConnections) {
+          // Clear all connection errors if no duplicates found
+          setErrors(prevErrors => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.aiConnections;
+            return newErrors;
+          });
+        }
+        
+        return {
+          ...prev,
+          aiConnections: updatedConnections
+        };
+      });
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
+      
+      // Clear error when user starts typing
+      if (errors[name as keyof ValidationErrors]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name as keyof ValidationErrors];
+          return newErrors;
+        });
+      }
     }
-    
-    // Clear error when user starts typing
-    if (errors[name as keyof ValidationErrors]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name as keyof ValidationErrors];
-        return newErrors;
+  };
+
+  const handleApiProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (name.startsWith('apiProvider-')) {
+      // Handle provider changes for specific connections
+      const connectionId = name.replace('apiProvider-', '');
+      setFormData(prev => {
+        const updatedConnections = prev.aiConnections.map(conn => 
+          conn.id === connectionId ? { ...conn, apiProvider: value } : conn
+        );
+        
+        // Check for duplicate API key + provider combinations
+        const connectionErrors: { [key: string]: { apiKey?: string; apiProvider?: string } } = {};
+        const connectionCombinations = new Set<string>();
+        
+        updatedConnections.forEach((connection) => {
+          if (connection.apiKey && connection.apiProvider) {
+            const combination = `${connection.apiKey.trim()}:${connection.apiProvider}`;
+            if (connectionCombinations.has(combination)) {
+              if (!connectionErrors[connection.id]) {
+                connectionErrors[connection.id] = {};
+              }
+              connectionErrors[connection.id].apiKey = 'Duplicate API key + provider combination';
+              connectionErrors[connection.id].apiProvider = 'Duplicate API key + provider combination';
+            } else {
+              connectionCombinations.add(combination);
+            }
+          }
+        });
+        
+        // Update errors
+        if (Object.keys(connectionErrors).length > 0) {
+          setErrors(prevErrors => {
+            const newErrors = { ...prevErrors };
+            newErrors.aiConnections = connectionErrors;
+            return newErrors;
+          });
+        } else if (errors.aiConnections) {
+          // Clear all connection errors if no duplicates found
+          setErrors(prevErrors => {
+            const newErrors = { ...prevErrors };
+            delete newErrors.aiConnections;
+            return newErrors;
+          });
+        }
+        
+        return {
+          ...prev,
+          aiConnections: updatedConnections
+        };
       });
     }
   };
 
-  const handleApiProviderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setFormData(prev => ({ ...prev, apiProvider: value }));
+  const handleAddConnection = () => {
+    // Add a new AI connection
+    const newConnection: AIConnection = {
+      id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      apiKey: '',
+      apiProvider: providers.length > 0 ? providers[0].id : 'qwen-plus',
+    };
+    setFormData(prev => ({
+      ...prev,
+      aiConnections: [...prev.aiConnections, newConnection]
+    }));
+  };
+
+  const handleDeleteConnection = (connectionId: string) => {
+    // Show delete confirmation dialog
+    if (confirm('Are you sure you want to delete this AI connection?')) {
+      // Perform the actual deletion
+      setFormData(prev => ({
+        ...prev,
+        aiConnections: prev.aiConnections.filter(conn => conn.id !== connectionId)
+      }));
+      // Clear any errors for this connection
+      if (errors.aiConnections?.[connectionId]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          if (newErrors.aiConnections) {
+            const connectionErrors = { ...newErrors.aiConnections };
+            delete connectionErrors[connectionId];
+            if (Object.keys(connectionErrors).length === 0) {
+              delete newErrors.aiConnections;
+            } else {
+              newErrors.aiConnections = connectionErrors;
+            }
+          }
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  const handleTestConnection = async (connectionId: string) => {
+    // Test a specific AI connection
+    const connection = formData.aiConnections.find(conn => conn.id === connectionId);
+    if (!connection || !connection.apiKey || !connection.apiProvider) {
+      setMessage('Please enter API key and select provider before testing');
+      setMessageType('error');
+      return;
+    }
+
+    setMessage('Testing API connection...');
+    setMessageType(null);
     
-    // Clear error when user selects a provider
-    if (errors.apiProvider) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.apiProvider;
-        return newErrors;
+    try {
+      const response = await axios.post('/api/test-ai-connection', {
+        provider: connection.apiProvider,
+        apiKey: connection.apiKey
       });
+      
+      if (response.data.success) {
+        setMessage(`Connection test passed for ${connection.apiProvider}!`);
+        setMessageType('success');
+      } else {
+        setMessage(`Connection test failed for ${connection.apiProvider}: ${response.data.error || 'Unknown error'}`);
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage(`Connection test failed for ${connection.apiProvider}: ${(error as Error).message}`);
+      setMessageType('error');
     }
   };
 
@@ -217,8 +439,7 @@ export default function RegistrationPage() {
       formDataToSend.append('name', formData.name);
       formDataToSend.append('email', formData.email);
       formDataToSend.append('password', formData.password);
-      formDataToSend.append('apiKey', formData.apiKey);
-      formDataToSend.append('apiProvider', formData.apiProvider);
+      formDataToSend.append('aiConnections', JSON.stringify(formData.aiConnections));
       
       if (formData.profileImage) {
         formDataToSend.append('profileImage', formData.profileImage);
@@ -261,34 +482,7 @@ export default function RegistrationPage() {
     setMessageType('success');
   };
 
-  const handleApiTest = async () => {
-    if (!formData.apiKey || !formData.apiProvider) {
-      setMessage('Please enter API Key and select Provider before testing');
-      setMessageType('error');
-      return;
-    }
 
-    try {
-      setMessage('Testing API connection...');
-      setMessageType(null);
-      
-      const response = await axios.post('/api/test-ai-connection', {
-        provider: formData.apiProvider,
-        apiKey: formData.apiKey
-      });
-      
-      if (response.data.success) {
-        setMessage('API connection test successful!');
-        setMessageType('success');
-      } else {
-        setMessage(`API connection test failed: ${response.data.error || 'Unknown error'}`);
-        setMessageType('error');
-      }
-    } catch (error) {
-      setMessage(`Error testing API connection: ${(error as Error).message}`);
-      setMessageType('error');
-    }
-  };
 
   return (
     <div className="page-container bg-gray-100 flex items-center justify-center p-4">
@@ -317,7 +511,7 @@ export default function RegistrationPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
+                className={`w-full px-4 py-1 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 h-5`}
                 placeholder="Enter your username"
               />
               {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
@@ -333,7 +527,7 @@ export default function RegistrationPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
+                className={`w-full px-4 py-1 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 h-5`}
                 placeholder="Enter your email"
               />
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
@@ -352,7 +546,7 @@ export default function RegistrationPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
+                className={`w-full px-4 py-1 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 h-5`}
                 placeholder="Create a password"
               />
               {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
@@ -368,66 +562,77 @@ export default function RegistrationPage() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
+                className={`w-full px-4 py-1 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 h-5`}
                 placeholder="Confirm your password"
               />
               {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
             </div>
           </div>
 
-          {/* Row 3: API Key, Provider selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-1">
-                API Key <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="apiKey"
-                name="apiKey"
-                value={formData.apiKey}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-2 border ${errors.apiKey ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900`}
-                placeholder="Enter your API key"
-              />
-              {errors.apiKey && <p className="mt-1 text-sm text-red-600">{errors.apiKey}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Provider Selection <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
-                {providers.map((provider) => (
-                  <div key={provider.id} className="flex items-center">
-                    <input
-                      type="radio"
-                      id={`provider-${provider.id}`}
-                      name="apiProvider"
-                      value={provider.id}
-                      checked={formData.apiProvider === provider.id}
-                      onChange={handleApiProviderChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                    />
-                    <label htmlFor={`provider-${provider.id}`} className="ml-2 block text-sm text-gray-700">
-                      {provider.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              {errors.apiProvider && <p className="mt-1 text-sm text-red-600">{errors.apiProvider}</p>}
-            </div>
-          </div>
-
-          {/* Row 4: API Test button */}
+          {/* Row 3: AI Connections */}
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              AI Connections <span className="text-red-500">*</span>
+            </label>
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+              {/* AI Connections List */}
+              {formData.aiConnections.map((connection) => (
+                <div key={connection.id} className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      id={`apiKey-${connection.id}`}
+                      name={`apiKey-${connection.id}`}
+                      value={connection.apiKey}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-1 border ${errors.aiConnections?.[connection.id]?.apiKey ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 h-5`}
+                      placeholder="Enter your API key"
+                    />
+                    {errors.aiConnections?.[connection.id]?.apiKey && <p className="mt-1 text-sm text-red-600">{errors.aiConnections[connection.id].apiKey}</p>}
+                  </div>
+                  <div className="sm:w-40">
+                    <select
+                      id={`apiProvider-${connection.id}`}
+                      name={`apiProvider-${connection.id}`}
+                      value={connection.apiProvider}
+                      onChange={handleApiProviderChange}
+                      className={`w-full px-4 py-1 border ${errors.aiConnections?.[connection.id]?.apiProvider ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 h-5`}
+                    >
+                      {providers.map((provider) => (
+                        <option key={provider.id} value={provider.id}>
+                          {provider.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.aiConnections?.[connection.id]?.apiProvider && <p className="mt-1 text-sm text-red-600">{errors.aiConnections[connection.id].apiProvider}</p>}
+                  </div>
+                  <div className="sm:flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteConnection(connection.id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors h-5 flex items-center justify-center"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTestConnection(connection.id)}
+                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors h-5 flex items-center justify-center"
+                    >
+                      Test
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
             <button
               type="button"
-              onClick={handleApiTest}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              onClick={handleAddConnection}
+              className="mt-4 px-4 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors h-5 flex items-center"
             >
-              API Test
+              Add New Connection
             </button>
+            {errors.aiConnections?.['no-connections'] && <p className="mt-1 text-sm text-red-600">{errors.aiConnections['no-connections'].apiKey}</p>}
           </div>
 
           {/* Row 5: Profile image */}

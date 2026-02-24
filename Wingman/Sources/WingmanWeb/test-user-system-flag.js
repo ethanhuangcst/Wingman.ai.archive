@@ -45,7 +45,7 @@ async function testUserSystemFlag() {
         const testEmail = `test_${Date.now()}@example.com`;
         
         await connection.execute(
-            'INSERT INTO users (name, email, password, system_flag, created_at) VALUES (?, ?, ?, ?, NOW())',
+            'INSERT INTO users (name, email, password, system_flag, createdAt) VALUES (?, ?, ?, ?, NOW())',
             ['Test User', testEmail, 'hashed_password', 'WINGMAN']
         );
         console.log('Created test user');
@@ -77,7 +77,7 @@ async function testUserSystemFlag() {
         console.log('\n=== Test 5: Testing system_flag nullability ===');
         try {
             await connection.execute(
-                'INSERT INTO users (name, email, password, system_flag, created_at) VALUES (?, ?, ?, ?, NOW())',
+                'INSERT INTO users (name, email, password, system_flag, createdAt) VALUES (?, ?, ?, ?, NOW())',
                 ['Test User 2', `test2_${Date.now()}@example.com`, 'hashed_password', null]
             );
             console.log('❌ ERROR: Should not be able to insert user with null system_flag');
