@@ -80,7 +80,7 @@ AND Wingman-panel is loaded
 AND this chat is a new chat
 When: app receives a response from AI
 Then: proceed with US-003-002
-AND Generate an appropriate name for the new chat based on context
+AND Generate an short name for the new chat, it should be one sentance to summarize the conversation based on context, 
 AND the new chat information will be saved into database
 AND the chat name in "Chat History" for the current chat will be replaced by the new name
 

@@ -34,13 +34,13 @@ public class ConnectivityService {
                 return
             }
             
-            if let response = response as? HTTPURLResponse, response.statusCode == 200 {
-                print("Connectivity test passed")
-                completion(.pass)
-            } else {
-                print("Connectivity test failed: invalid response")
-                completion(.fail)
-            }
+            if let response = response as? HTTPURLResponse, (200...399).contains(response.statusCode) {
+            print("Connectivity test passed")
+            completion(.pass)
+        } else {
+            print("Connectivity test failed: invalid response")
+            completion(.fail)
+        }
         }
         task.resume()
     }

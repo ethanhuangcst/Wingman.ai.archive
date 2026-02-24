@@ -586,25 +586,122 @@ export default function MainSection({ provider = 'AI' }: MainSectionProps) {
   const handlePromptClick = (promptText: string): void => {
     if (mindInputRef.current) {
       const textArea = mindInputRef.current;
-      const start = textArea.selectionStart;
-      const end = textArea.selectionEnd;
       const currentValue = textArea.value;
       
-      // Insert prompt text at cursor position
-      const newValue = currentValue.substring(0, start) + promptText + currentValue.substring(end);
+      // Add two newlines after the prompt text to create a blank line
+      const promptWithNewLines = promptText + '\n\n';
+      
+      // Find the boundary between prompts and original text
+      // Split by double newlines to identify sections
+      const sections = currentValue.split('\n\n');
+      
+      // Separate prompts and original text
+      let prompts: string[] = [];
+      let originalText = '';
+      
+      if (sections.length > 0) {
+        // The last section is likely the original text
+        originalText = sections[sections.length - 1];
+        // All other sections are prompts
+        if (sections.length > 1) {
+          prompts = sections.slice(0, sections.length - 1);
+        }
+      }
+      
+      // Add the new prompt to the prompts array
+      prompts.push(promptText);
+      
+      // Reconstruct the text area value
+      // Join prompts with double newlines, then add original text with double newlines
+      const promptsText = prompts.join('\n\n');
+      const newValue = promptsText + (originalText ? '\n\n' + originalText : '');
+      
+      // Update the state first
       setMindInput(newValue);
       
-      // Set focus back to text area and select the inserted text
+      // Wait a moment for state to update, then focus and adjust
       setTimeout(() => {
         if (mindInputRef.current) {
-          mindInputRef.current.focus();
-          mindInputRef.current.setSelectionRange(start, start + promptText.length);
+          const updatedTextArea = mindInputRef.current;
+          // Set focus back to text area
+          updatedTextArea.focus();
+          
+          // Calculate cursor position
+          let newCursorPosition = promptsText.length + (prompts.length > 1 ? 2 : 0);
+          
+          // If this is the first prompt and there's original text, place cursor in front of original text
+          if (prompts.length === 1 && originalText) {
+            newCursorPosition = promptsText.length + 2; // After prompts text and double newline
+          }
+          
+          updatedTextArea.setSelectionRange(newCursorPosition, newCursorPosition);
+          // Scroll to the cursor position
+          updatedTextArea.scrollTop = updatedTextArea.scrollHeight;
         }
-      }, 100);
+      }, 50);
     }
   };
 
   // Handle message sending
+  // Function to generate chat name using the AI model
+  const generateChatName = async (prompt: string, response: string, provider: string): Promise<string> => {
+    try {
+      // Create a system prompt for generating chat names
+      const namePrompt = `Please generate a short, concise chat name (1-5 words) that summarizes the main topic of the following conversation.\n\nThe name should:\n- Be descriptive and capture the main purpose of the conversation\n- Be appropriate for a chat history list\n- Be under 30 characters\n- Not include any special characters except spaces\n- Be in the same language as the user's initial message\n\nUser: ${prompt}\n\nAssistant: ${response}\n\nPlease provide only the chat name, no explanations or additional text.`;
+      
+      // Send request to AI API to generate chat name
+      const nameResponse = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: namePrompt }],
+          provider: provider // Use the same provider the user selected for the chat
+        }),
+      });
+      
+      if (nameResponse.ok) {
+        const data = await nameResponse.json();
+        if (data.response) {
+          // Clean and format the generated name
+          let chatName = data.response.trim();
+          // Remove any trailing periods or other punctuation
+          chatName = chatName.replace(/[.!?]+$/, '');
+          // Limit length
+          if (chatName.length > 30) {
+            chatName = chatName.substring(0, 30) + '...';
+          }
+          // Remove any leading/trailing whitespace
+          chatName = chatName.trim();
+          // Check if we got a meaningful name
+          if (chatName && chatName.length > 2 && chatName.toLowerCase() !== 'new chat') {
+            return chatName;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating chat name with AI:', error);
+    }
+    
+    // Fallback to simple prompt-based name if AI generation fails
+    try {
+      // Use first sentence or key phrase from prompt
+      const firstSentence = prompt.split(/[.!?]/)[0].trim();
+      if (firstSentence.length > 0) {
+        let chatName = firstSentence.substring(0, 30);
+        if (chatName.length > 30) {
+          chatName = chatName.substring(0, 30) + '...';
+        }
+        return chatName.trim() || 'New Chat';
+      }
+    } catch (error) {
+      console.error('Error generating fallback chat name:', error);
+    }
+    
+    return 'New Chat';
+  };
+
   const sendMessage = async (): Promise<void> => {
     if (!mindInput.trim() && attachments.length === 0) return;
 
@@ -698,20 +795,14 @@ export default function MainSection({ provider = 'AI' }: MainSectionProps) {
             // This is the first message in an automatically created chat
             // Generate appropriate name for the chat based on context
             let chatName = 'New chat';
-            if (prompt.length > 0) {
-              // Generate chat name based on both user prompt and assistant response for better context
-              // Use first 20 characters of the prompt plus a hint from the assistant response
-              let contextBasedName = prompt.substring(0, 20);
-              if (data.response) {
-                // Extract a short meaningful phrase from the assistant response
-                const responseSummary = data.response.substring(0, 30).replace(/[^a-zA-Z0-9\s]/g, '');
-                if (responseSummary.length > 10) {
-                  contextBasedName += `: ${responseSummary.substring(0, 15)}`;
-                }
-              }
-              chatName = contextBasedName;
-              if (chatName.length > 30) {
-                chatName = chatName.substring(0, 30) + '...';
+            if (prompt.length > 0 && data.response) {
+              // Generate chat name using AI
+              chatName = await generateChatName(prompt, data.response, selectedProvider);
+            } else if (prompt.length > 0) {
+              // Fallback to prompt-based name if no response
+              chatName = prompt.substring(0, 40);
+              if (chatName.length > 40) {
+                chatName = chatName.substring(0, 40) + '...';
               }
             }
             
@@ -784,20 +875,14 @@ export default function MainSection({ provider = 'AI' }: MainSectionProps) {
             // Create new chat if this is the first message and no active chat
             // Generate appropriate name for the new chat based on context
             let chatName = 'New chat';
-            if (prompt.length > 0) {
-              // Generate chat name based on both user prompt and assistant response for better context
-              // Use first 20 characters of the prompt plus a hint from the assistant response
-              let contextBasedName = prompt.substring(0, 20);
-              if (data.response) {
-                // Extract a short meaningful phrase from the assistant response
-                const responseSummary = data.response.substring(0, 30).replace(/[^a-zA-Z0-9\s]/g, '');
-                if (responseSummary.length > 10) {
-                  contextBasedName += `: ${responseSummary.substring(0, 15)}`;
-                }
-              }
-              chatName = contextBasedName;
-              if (chatName.length > 30) {
-                chatName = chatName.substring(0, 30) + '...';
+            if (prompt.length > 0 && data.response) {
+              // Generate chat name using AI
+              chatName = await generateChatName(prompt, data.response, selectedProvider);
+            } else if (prompt.length > 0) {
+              // Fallback to prompt-based name if no response
+              chatName = prompt.substring(0, 40);
+              if (chatName.length > 40) {
+                chatName = chatName.substring(0, 40) + '...';
               }
             }
             
@@ -1003,7 +1088,7 @@ export default function MainSection({ provider = 'AI' }: MainSectionProps) {
                         </div>
                       ) : (
                         <>
-                          <span data-testid="chat-name" className="text-gray-800 truncate">{chat.name}</span>
+                          <span data-testid="chat-name" className="text-gray-800 truncate" title={chat.name}>{chat.name}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1194,7 +1279,7 @@ export default function MainSection({ provider = 'AI' }: MainSectionProps) {
           
           <div className="relative">
             <div className="relative w-full h-[150px] border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-                  <div className="px-[6px] py-[3px] text-sm text-gray-500">What&apos;s in your mind?</div>
+                  <div className="px-[6px] py-[3px] text-sm text-gray-500">What are your thoughts? Press command+enter to send the message.</div>
                   {/* Attachments display area */}
                   {attachments.length > 0 && (
                     <div className="px-[6px] py-1 flex flex-wrap gap-2">
@@ -1235,9 +1320,7 @@ export default function MainSection({ provider = 'AI' }: MainSectionProps) {
                     }}
                     className="w-full h-[120px] px-[6px] pt-[2px] pb-1 resize-none border-0 rounded-lg focus:outline-none"
                   />
-                  <div className="absolute bottom-2 left-2 text-xs text-gray-400">
-                    command+enter to send message
-                  </div>
+
                   <div className="absolute bottom-2 right-2 flex items-center gap-2">
                     {/* AI Provider Dropdown */}
                     <div className="relative">
