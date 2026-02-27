@@ -1,0 +1,230 @@
+------------
+------------
+# Feature F-000: 
+- Feature name: Mac back-end features
+- Feature type: SwiftUI
+
+------------
+## User Story F000-US-001
+As the Wingman system admin, I want the Mac back-end features to be separated from the UI features, so that I can have a decoupled code architecture that is easier to maintain and test.
+
+### F000-US-001-001
+Scenario: Back-end and UI code are in separate targets
+Given: the Wingman project is structured with multiple targets
+When: I examine the project structure
+Then: I should see separate targets for back-end functionality and UI components
+And: the back-end target should not depend on the UI target
+
+### F000-US-001-002
+Scenario: Back-end services are accessible to UI without direct coupling
+Given: back-end services are implemented in a separate target
+When: UI components need to use back-end functionality
+Then: they should access it through defined interfaces or protocols
+And: there should be no direct imports of UI code in back-end files
+
+### F000-US-001-003
+Scenario: Back-end functionality can be tested independently
+Given: back-end services are separated from UI
+When: I run unit tests for back-end functionality
+Then: the tests should execute without requiring UI components
+And: they should test business logic in isolation
+
+### F000-US-001-004
+Scenario: UI components can be tested independently
+Given: UI components are separated from back-end
+When: I run UI tests
+Then: they should be able to mock back-end dependencies
+And: they should test UI behavior in isolation
+
+### F000-US-001-005
+Scenario: Internet connectivity test
+Given: App is running
+When: The Mac UI component requests a back-end internet connectivity test
+Then: perform a internetct connectivity test
+And: Return the result "PASS/FAIL"
+
+
+
+------------
+------------
+# Feature F-01: 
+- Feature name: App initialization after launch
+- Feature type: SwiftUI
+
+------------
+## User Story F001-US-001
+As a Wingman user, I want to access the app via a menu bar icon with context-aware behavior, so that I can quickly interact with the app without a dock icon cluttering my screen and receive appropriate options based on the current app state
+
+### F001-US-001-001
+Scenario: Wingman appears in menu bar on launch
+Given: the application is installed
+When: the user launches the application
+Then: the app should appear as an icon (rss/icon.png) in the menu bar
+And no dock icon should be visible
+And no visible app window displayed as well
+
+### F001-US-001-002
+Scenario: Menu bar icon responds to system dark mode
+Given: the app is running in the menu bar
+When: the user changes the system appearance to dark mode
+Then: the menu bar icon should update to be visible in dark mode
+And using the system template solution so that we don't need two icon files for light and dark modes
+
+
+### F001-US-001-003
+Scenario: Right-click menu options appear on menu bar icon
+Given: the app is running in the menu bar
+When: the user right-clicks the menu bar icon
+Then: 1 options should appear:
+- Exit
+
+
+### F001-US-001-004
+Scenario: Exit app 
+Given: the app is running in the menu bar
+When: the user right-clicks the menu bar icon
+AND click Exit
+Then: App should exit
+
+### F001-US-001-006
+Scenario: Left-click opens WingmanPanel - Panel NOT OPENED,
+Given: the app is running in the menu bar
+AND the WingmanPanel window is NOT open
+When: the user left-clicks the menu bar icon
+Then: the WingmanPanel should be opened
+
+### F001-US-001-007
+Scenario: Left-click opens WingmanPanel - Panel OPENED, Panel PINNED
+Given: the app is running in the menu bar
+AND the WingmanPanel window is OPENED
+AND the WingmanPanel window is PINNED
+When: the user left-clicks the menu bar icon
+Then: the WingmanPanel should keep as opened
+
+### F001-US-001-008
+Scenario: Left-click opens WingmanPanel - Panel OPENED, Panel NOT PINNED
+Given: the app is running in the menu bar
+AND the WingmanPanel window is OPENED
+AND the WingmanPanel window is NOT PINNED
+When: the user left-clicks the menu bar icon
+Then: the WingmanPanel should be closed
+
+
+------------
+## User Story F001-US-002
+As an App user, I want the app to automatically test internet connectivity and adjust functionality based on the result, so that I always have access to appropriate features based on my network status
+
+### F001-US-002-001
+Scenario: App performs internet connectivity test on launch
+Given: the application is launched
+When: the app starts up
+Then: it should call back-end internet connectivity test defined in F000-US-001-005
+
+### F001-US-002-002
+Scenario: App configures for online mode when connectivity test passes
+Given: the app is launched
+AND the app has called the back-end connectivity test defined in F000-US-001-005
+When: the app receives the test result as "PASS"
+Then: the app should configure for online mode
+AND the menu bar icon should use file: "rss/icon.png"
+AND print in terminal: "********************* Launching: connected to WingmanWeb service  *********************"
+
+### F001-US-002-003
+Scenario: App configures for offline mode when connectivity test fails
+Given: the app is launched
+AND the app has called the back-end connectivity test defined in F000-US-001-005
+When: the app receives the test result as "FAIL"
+Then: the app should configure for offline mode
+AND the menu bar icon should use file: "rss/icon_offline.png"
+AND print in terminal: "********************* Launching: connect to WingmanWeb service FAILED !!! *********************"
+
+
+------------
+## User Story F001-US-003
+As an App user, I want the WingmanPanel window to initialize itself and embed the web application WingmanWeb when opened, so that I can use the web application in a properly configured window
+
+### F001-US-003-001
+Scenario: WingmanPanel window initialization - online mode
+Given: the app is online mode
+AND the user is loged in
+When: the WinmanUI-WingmanPanel window opens
+Then: it should complete the following initialization:
+- there is always only one WingmanPanel open
+- the window should have a fixed size of 1200x860 pixels
+- the window should be shadowed
+- the window should be placed at this initial position: aligned to top right corner of the screen, with 20px gap to the screen edge, and 20px gap to the bottom of the system menubar
+- the window is moveable
+- the window title should be disabled
+- the toolbar should be disabled
+- the system window control (close, minimize, maximize window) should be disabled
+- the window corners should be rounded with transparent background
+- the window always stay in front of all other windows
+- the window is displayed at all Mac desktops
+- on the top right conor of the window body, there are two buttons: pin and close (they should not be placed in the tool bar since toolbar is disabled)
+- use the system pin and close button icon
+- the button icon should automatically aligned with light and dark mode
+- by default, the close button is enabled but not selected
+- by default, the pin button is set as unpinned
+AND WingmanPanel should embed WingmanWeb
+AND WingmanWeb input fields should be active so that the users can direclty enter inputs 
+
+### F001-US-003-002
+Scenario: Pin button functionality
+Given: the WingmanPanel window is open
+When: the user clicks the pin button
+Then: the WingmanPanel window should switch between pinned and unpinned states
+AND the pin icon should automatically change to reflect the current state
+
+### F001-US-003-003
+Scenario: Close button functionality
+Given: the WingmanPanel window is open
+When: the user clicks the close button
+Then: the WingmanPanel window should close
+
+### F001-US-003-004
+Scenario: Outside click behavior for unpinned WingmanPanel
+Given: the WingmanPanel window is open
+AND the WingmanPanel is unpinned
+When: the user clicks any place outside of the WingmanPanel window
+Then: the WingmanPanel window should automatically close
+
+### F001-US-003-005
+Scenario: Outside click behavior for pinned WingmanPanel
+Given: the WingmanPanel window is open
+AND the WingmanPanel is pinned
+When: the user clicks any place outside of the WingmanPanel window
+Then: the WingmanPanel window should remain open
+
+### F001-US-003-006
+Scenario: WingmanPanel window initialization - offline mode
+Given: the app is offline mode
+AND the user is loged in
+When: the WinmanUI-WingmanPanel window opens
+Then: it should complete the following initialization:
+- there is always only one WingmanPanel open
+- the window should have a fixed size of 1200x860 pixels
+- the window should be shadowed
+- the window should be placed at this initial position: aligned to top right corner of the screen, with 20px gap to the screen edge, and 20px gap to the bottom of the system menubar
+- the window is moveable
+- the window title should be disabled
+- the toolbar should be disabled
+- the system window control (close, minimize, maximize window) should be disabled
+- the window corners should be rounded with transparent background
+- the window always stay in front of all other windows
+- the window is displayed at all Mac desktops
+- on the top right conor of the window body, there are two buttons: pin and close (they should not be placed in the tool bar since toolbar is disabled)
+- use the system pin and close button icon
+- the button icon should automatically aligned with light and dark mode
+- by default, the close button is enabled but not selected
+- by default, the pin button is set as unpinned
+AND display text in the middle: "Cloud service is not available, Wingman is now offline"
+AND display a "Wake me up!" button
+
+
+### F001-US-003-007
+Scenario: Wake up the offline wingman
+Given: the app is running in offline mode
+When: the user clicks "Wake me up!" button on WingmanPanel
+Then: the app should perform another internet connectivity test
+AND adjust its behavior according to the test result
+

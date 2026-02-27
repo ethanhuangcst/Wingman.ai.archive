@@ -1,0 +1,45 @@
+# F-003
+- Feature name: App Layout and Embedding
+- Feature type: Web
+
+## US-007
+As a user, I want all the WingmanWeb pages to always have a fixed size of 1200x800px, and adjust all page content accordingly, so that I have a nice look and feel when WingmanWeb is embedded into my Wingman Mac native app.
+
+### US-007-001
+Scenario: All pages load with fixed size
+Given: The WingmanWeb app is accessed through a browser or embedded in the Mac app
+When: I navigate to any page (login, register, settings, etc.)
+Then: The page should render with a fixed width of 1200px and height of 800px
+And: The page content should be properly laid out within these dimensions
+
+### US-007-002
+Scenario: Content fits within fixed dimensions
+Given: The WingmanWeb app is loaded with any page
+When: I view the page content
+Then: All UI elements (forms, buttons, text, images) should fit within the 1200x800px space
+And: No horizontal or vertical scrollbars should appear for the main content area
+And: The layout should be visually balanced and not feel cramped
+
+### US-007-003
+Scenario: Embedding in Mac app
+Given: The WingmanWeb app is embedded into the WingmanPanel.swift in the Wingman Mac native app
+When: I open the embedded WingmanWeb in the Mac app
+Then: The app should display correctly within the allocated 1200x800px space
+And: The layout should look clean and professional
+And: There should be no layout issues or overflow when embedded
+
+### US-007-004
+Scenario: Responsive within fixed size
+Given: The WingmanWeb app has a fixed size of 1200x800px
+When: I interact with page elements (e.g., form inputs, dropdowns, modals)
+Then: The elements should respond appropriately within the fixed dimensions
+And: Any modal dialogs or pop-ups should be positioned correctly within the 1200x800px space
+And: Form validation and error messages should display properly without breaking the layout
+
+### US-007-005
+Scenario: Consistent layout across all pages
+Given: The WingmanWeb app has multiple pages
+When: I navigate between different pages (login → register → settings)
+Then: All pages should maintain the same fixed 1200x800px size
+And: The layout style and visual consistency should be maintained across all pages
+And: No page should have a different size or layout structure

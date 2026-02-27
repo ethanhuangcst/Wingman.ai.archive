@@ -1,0 +1,6 @@
+# Definition of Done (DoD)
+## Ask a question to me: "Ethan, does the implementation meet your requirement? Y/N", and get "Yes" from me
+## Unit Test Linecoverage = 100%
+## Automated functinoal test coverage covers all scenarios in Acceptance Criterial 
+## An up-to-date check on req.txt is performed, to ensure the whole set of feature-user story-acceptance criterial that we've developed is 100% synchronized to req.text, and the result of the check is PASS
+## All code must be checked in to Git repository

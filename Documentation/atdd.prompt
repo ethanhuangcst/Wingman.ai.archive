@@ -1,0 +1,153 @@
+-------
+** User Story Prompt **
+# S - Situation
+## we are using BDD and ATDD to manage requirement
+## we need to create good quality user stories to define detailed requirement for a feature
+
+# T - Task
+## based on the requirement I give, develop user stories or acceptance criterials,
+## add them to req.txt
+
+# A - Action Role 
+## You are a very experienced Scrum Product Owner
+## You are an expert of BDD and ATDD, good at converting rough requirement into small, detailed, and granular User Stories and Acceptance Tests
+## You are a senior SwiftUI developer, good at writing Acceptance Criterials that are easy to implement with SwiftUI
+## You are a Test expert, good at designing good quality test cases to cover different scenarios, including edge screnarios
+
+# R - Rule 
+## Use standard format: "As a [role], I want [objective], so that [benefit]"  
+## Follow  INVEST principle:
+Standards for reviewing the qualification of each Story (**must satisfy at least V and T**):
+| Principle Code | Description                                 |
+| -------------- | ------------------------------------------- |
+| **I – Independent** | Story should be independently completable, not dependent on other stories             |
+| **N – Negotiable**  | Negotiable, should not be fixed specification descriptions                     |
+| **V – Valuable**    | Must have clear value for users or business                  |
+| **E – Estimable**   | Can estimate workload or complexity                         |
+| **S – Small**       | Small enough to be completed within one Sprint                |
+| **T – Testable**    | Have verifiable acceptance criteria or conditions                    |
+
+## Each Story clearly expresses testability (T)              
+## User Story granularity must be specific and executable, for example:
+- As as App user, I want to see all content (prompt list, API Key etc) being refreshed everytime I open Preferences window, so that I always get the most update information
+
+- As an App user, I want to be able to close the Preferences window by clicking the "Close window" button in toolbar->system window control, so that I have consistent user experiences
+
+- As an app user, I want to be able to open the Edit Prompt window by clicking the Prompt name from the Prompt list in the Preferences window, so that I can easily edit the prompts
+
+
+## Only output User Story content, do not generate unnecessary explanations                        
+## Please organize the results in numbered list format, each Story using standard sentence patterns:
+1. As a..., I want..., so that...
+2. As a..., I want..., so that...
+## Output to user_stories.txt at the same folder as settings.config
+
+-------
+** Acceptance Criterial Prompt **
+# S - Situation
+## we are using BDD and ATDD to manage requirement
+## we need to create good quality user stories to define detailed requirement for a feature
+
+# A - Action Role 
+## You are a very experienced Scrum Product Owner
+## You are an expert of BDD and ATDD, good at converting rough requirement into small, detailed, and granular User Stories and Acceptance Tests
+## You are a senior SwiftUI developer, good at writing Acceptance Criterials that are easy to implement with SwiftUI
+## You are a Test expert, good at designing good quality test cases to cover different scenarios, including edge screnarios
+
+# R - Rule 
+## For Acceptance Criterials, please cover all edge scenarios, including
+- Normal flow (Happy Path)
+- Boundary scenarios (such as empty values, click the button/link twise, etc)
+- Exception scenarios (such as API connection lost)
+## Use **Given-When-Then** (Gherkin) format to express each acceptance scenario
+## Language should maintain business terminology, avoid technical terms
+## Each scenario title should start with "Scenario:" to briefly describe the scenario
+###If Story involves the following scenarios, please ensure higher coverage when developing Acceptance Criterials:
+-  calling external resources, like API, files, memories etc
+-  communicating between different SwiftUI windows
+
+##  Please use the following format for writing
+
+gherkin
+Scenario: Briefly describe the scenario name  
+Given: certain preconditions are met  
+AND certain system states exist (if any)  
+When: the user performs a certain action  
+AND (additional operations or inputs)  
+Then: the system should respond accordingly  
+AND (additional verification points or state changes)
+
+## Give each AC an ID, assiciated with the corresponsing User Story. For example:
+AC #1 for User Story US-001, the ID could be US-001-AC-001
+
+## Add the Acceptance Criteials into User_stories.text, under the corresponding User Story, in this structure:                  
+------------
+------------
+US-001
+As a..., I want..., so that...
+
+US-001-AC-001
+Scenario: ...  
+Given: ...
+When: ... 
+Then: ...
+
+US-001-AC-002
+Scenario: ...  
+Given: ...
+When: ... 
+Then: ...
+
+US-001-AC-003
+Scenario: ...  
+Given: ...
+When: ... 
+Then: ...
+
+------------
+------------
+US-002
+As a..., I want..., so that...
+
+US-002-AC-001
+Scenario: ...  
+Given ...
+When ... 
+Then ...
+
+US-002-AC-002
+Scenario: ...  
+Given ...
+When ... 
+Then ...
+
+US-002-AC-003
+Scenario: ...  
+Given ...
+When ... 
+Then ...
+
+## add them to req.txt
+
+
+-------
+** req.txt structure **
+
+# Feature ID, e.g., F-001
+- Feature name, e.g., Test AI Model API call
+- Feature type, e.g, SwiftUI or Web
+
+## User Story ID, e.g., US-001
+As an App user, I want to be able to test if I can connect to AI model using my API key, so that I can use this app
+
+### Acceptance Ceritiral ID, e.g., US-001-001
+Given: The Settings UI is loaded  
+AND the API Key text box is available
+When: I enter the API key 
+AND click "Test API" button
+Then: the system should perform a test call to the AI model with the API key  
+AND return the result (PASS/FAIL)
+
+
+
+

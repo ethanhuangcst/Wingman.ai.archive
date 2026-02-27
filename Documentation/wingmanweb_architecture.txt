@@ -1,0 +1,156 @@
+# Wingman App Development Proposal: Next.js-Based Architecture
+
+## 1. Recommended Tech Stack
+
+### Frontend (WingmanWeb)
+- **Framework**: Next.js 14 + TypeScript
+- **UI Component Library**: Ant Design (popular in China, optimized for AliCloud deployment)
+- **State Management**: React Context API (simple) → Redux Toolkit (complex scenarios)
+- **Styling**: Tailwind CSS (for custom styling alongside Ant Design)
+- **API Client**: Axios (for HTTP requests)
+
+### Backend
+- **MVP Phase**: Next.js API Routes (same project, simplified setup)
+- **Production Phase**: NestJS (TypeScript, modular, scalable)
+- **Database**: MySQL 8.0+ (AliCloud RDS in production), local devDB
+- **Database Access**: mysql2/promise (direct MySQL connection with connection pooling)
+- **Authentication**: JWT (JSON Web Tokens)
+
+### Mac Client Integration
+- **WebView**: WKWebView (native macOS WebKit)
+- **Communication**: JavaScript Bridge via WKScriptMessageHandler
+- **Configuration**: JSON config file for web app URL and communication settings
+
+## 2. Decoupled Architecture
+
+### High-Level Architecture
+```
+┌─────────────────────────────┐       ┌─────────────────────────────┐
+│  Wingman Mac Client App     │       │       WingmanWeb Ecosystem   │
+├─────────────────────────────┤       ├─────────────────────────────┤
+│ ┌─────────────────────────┐ │       │ ┌─────────────────────────┐ │
+│ │   WingmanPanel          │ │       │ │  Next.js Frontend       │ │
+│ │  (WKWebView Container)  │ │◄──────►│  (React + Ant Design)    │ │
+│ └─────────────────────────┘ │       │ └─────────────────────────┘ │
+│ ┌─────────────────────────┐ │       │           │           │     │
+│ │  JS Bridge Handler      │ │       │           │           │     │
+│ └─────────────────────────┘ │       │ ┌─────────────────────────┐ │
+│ ┌─────────────────────────┐ │       │ │  Backend API            │ │
+│ │  Configuration Manager  │ │       │ │  (Next.js API Routes →  │ │
+│ └─────────────────────────┘ │       │ │   NestJS in Production)  │ │
+└─────────────────────────────┘       │ └─────────────────────────┘ │
+                                      │           │           │     │
+                                      │ ┌─────────────────────────┐ │
+                                      │ │  MySQL Database         │ │
+                                      │ │  (AliCloud RDS)         │ │
+                                      │ └─────────────────────────┘ │
+                                      └─────────────────────────────┘
+```
+
+### Key Architecture Principles
+1. **Separation of Concerns**: Each component has a clear responsibility
+2. **Progressive Scaling**: Start simple, then evolve as needed
+3. **Configuration-Driven**: All environment-specific settings in config files
+4. **Versioned Contracts**: Explicit communication protocols between components
+
+## 3. Communication Strategy
+
+### 1. Mac Client ↔ WingmanWeb Frontend (Local)
+- **Method**: JavaScript Bridge via WKScriptMessageHandler
+- **Use Cases**: Passing clipboard content, hotkey events, panel state
+- **Implementation**:
+  ```swift
+  // Mac app: Register message handler
+  webView.configuration.userContentController.add(self, name: "wingmanBridge")
+  
+  // Mac app: Send message to web
+  webView.evaluateJavaScript("window.wingmanBridge.onMessage(\(message))")
+  
+  // Web app: Receive message
+  window.wingmanBridge = {
+    onMessage: (data) => {
+      // Handle message from Mac app
+    }
+  }
+  
+  // Web app: Send message to Mac
+  if (window.webkit?.messageHandlers?.wingmanBridge) {
+    window.webkit.messageHandlers.wingmanBridge.postMessage({
+      type: "action",
+      payload: data
+    });
+  }
+  ```
+
+### 2. WingmanWeb Frontend ↔ Backend API
+- **Method**: HTTPS REST API
+- **Use Cases**: User data, app settings, database operations
+- **Implementation**:
+  ```typescript
+  // Web app: API call
+  async function fetchUserData() {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/profile`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.json();
+  }
+  ```
+
+## 4. Configuration Management
+
+### Mac Client Config (`config.json`)
+```json
+{
+  "environment": "development",
+  "webApp": {
+    "url": "http://localhost:3000",
+    "apiBaseUrl": "http://localhost:3000/api"
+  },
+  "communication": {
+    "bridgeProtocolVersion": "1.0",
+    "timeout": 5000
+  },
+  "featureFlags": {
+    "enableDebugMode": true
+  }
+}
+```
+
+### WingmanWeb Config (Environment Variables)
+- **Development** (`/.env.local`):
+  ```env
+  # Frontend
+  NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api
+  NEXT_PUBLIC_APP_ENV=development
+  
+  # Backend (API Routes)
+  DATABASE_URL=mysql://root:password@localhost:3306/wingman_dev
+  JWT_SECRET=your_jwt_secret
+  ```
+
+- **Production** (`/.env.production`):
+  ```env
+  # Frontend
+  NEXT_PUBLIC_API_BASE_URL=https://api.yourdomain.com
+  NEXT_PUBLIC_APP_ENV=production
+  
+  # Backend (NestJS)
+  DATABASE_URL=mysql://user:password@your-rds-instance:3306/wingman_prod
+  JWT_SECRET=your_production_jwt_secret
+  ```
+
+## 5. Deployment Strategy
+
+### Development Environment
+- **Frontend/Backend**: `npm run dev` (localhost:3000)
+- **Database**: Local MySQL or Docker container
+- **Mac App**: Loads web app from localhost
+
+### Production Environment (AliCloud)
+1. **Frontend**: Deploy Next.js build to AliCloud ECS or Serverless
+2. **Backend**: 
+   - MVP: Deploy Next.js API routes with frontend
+   - Production: Deploy NestJS to separate AliCloud ECS instance
+3. **Database**: AliCloud RDS MySQL
+4. **CDN**: AliCloud CDN for static assets
+5. **SSL**: AliCloud SSL Certificate for HTTPS
