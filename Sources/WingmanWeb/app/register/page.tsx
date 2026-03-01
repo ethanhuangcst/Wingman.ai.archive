@@ -65,17 +65,7 @@ export default function RegistrationPage() {
             setProviders(providerList);
             
             // Initialize with one empty connection using the first provider
-            if (providerList.length > 0 && formData.aiConnections.length === 0) {
-              const newConnection: AIConnection = {
-                id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                apiKey: '',
-                apiProvider: providerList[0].id,
-              };
-              setFormData(prev => ({
-                ...prev,
-                aiConnections: [newConnection]
-              }));
-            }
+
           }
         }
       } catch (error) {
@@ -86,19 +76,6 @@ export default function RegistrationPage() {
           { id: 'gpt-5.2-all', name: 'gpt-5.2-all' }
         ];
         setProviders(defaultProviders);
-        
-        // Initialize with one empty connection using the first default provider
-        if (formData.aiConnections.length === 0) {
-          const newConnection: AIConnection = {
-            id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            apiKey: '',
-            apiProvider: defaultProviders[0].id,
-          };
-          setFormData(prev => ({
-            ...prev,
-            aiConnections: [newConnection]
-          }));
-        }
       }
     };
 
@@ -135,39 +112,34 @@ export default function RegistrationPage() {
     const connectionErrors: { [key: string]: { apiKey?: string; apiProvider?: string } } = {};
     const connectionCombinations = new Set<string>();
     
-    if (formData.aiConnections.length === 0) {
-      // At least one connection is required
-      connectionErrors['no-connections'] = { apiKey: 'At least one AI connection is required' };
-    } else {
-      formData.aiConnections.forEach((connection) => {
-        if (connection.apiKey && !connection.apiProvider) {
+    formData.aiConnections.forEach((connection) => {
+      if (connection.apiKey && !connection.apiProvider) {
+        if (!connectionErrors[connection.id]) {
+          connectionErrors[connection.id] = {};
+        }
+        connectionErrors[connection.id].apiProvider = 'Provider is required';
+      }
+      if (connection.apiProvider && !connection.apiKey) {
+        if (!connectionErrors[connection.id]) {
+          connectionErrors[connection.id] = {};
+        }
+        connectionErrors[connection.id].apiKey = 'API Key is required';
+      }
+      
+      // Check for duplicate API key + provider combinations
+      if (connection.apiKey && connection.apiProvider) {
+        const combination = `${connection.apiKey.trim()}:${connection.apiProvider}`;
+        if (connectionCombinations.has(combination)) {
           if (!connectionErrors[connection.id]) {
             connectionErrors[connection.id] = {};
           }
-          connectionErrors[connection.id].apiProvider = 'Provider is required';
+          connectionErrors[connection.id].apiKey = 'Duplicate API key + provider combination';
+          connectionErrors[connection.id].apiProvider = 'Duplicate API key + provider combination';
+        } else {
+          connectionCombinations.add(combination);
         }
-        if (connection.apiProvider && !connection.apiKey) {
-          if (!connectionErrors[connection.id]) {
-            connectionErrors[connection.id] = {};
-          }
-          connectionErrors[connection.id].apiKey = 'API Key is required';
-        }
-        
-        // Check for duplicate API key + provider combinations
-        if (connection.apiKey && connection.apiProvider) {
-          const combination = `${connection.apiKey.trim()}:${connection.apiProvider}`;
-          if (connectionCombinations.has(combination)) {
-            if (!connectionErrors[connection.id]) {
-              connectionErrors[connection.id] = {};
-            }
-            connectionErrors[connection.id].apiKey = 'Duplicate API key + provider combination';
-            connectionErrors[connection.id].apiProvider = 'Duplicate API key + provider combination';
-          } else {
-            connectionCombinations.add(combination);
-          }
-        }
-      });
-    }
+      }
+    });
     if (Object.keys(connectionErrors).length > 0) {
       newErrors.aiConnections = connectionErrors;
     }
@@ -572,7 +544,7 @@ export default function RegistrationPage() {
           {/* Row 3: AI Connections */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              AI Connections <span className="text-red-500">*</span>
+              AI Connections
             </label>
             <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
               {/* AI Connections List */}
@@ -632,7 +604,6 @@ export default function RegistrationPage() {
             >
               Add New Connection
             </button>
-            {errors.aiConnections?.['no-connections'] && <p className="mt-1 text-sm text-red-600">{errors.aiConnections['no-connections'].apiKey}</p>}
           </div>
 
           {/* Row 5: Profile image */}
